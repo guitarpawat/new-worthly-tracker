@@ -1,0 +1,12 @@
+name: Worthly Tracker
+env: development
+db:
+  path: worthly-tracker.db   # omit or leave empty for in-memory SQLite
+log:
+  level: INFO
+
+# Optional:
+# db:
+#   path: worthly-tracker.db   # omit or leave empty for in-memory SQLite
+# log:
+#   path: logs/worthly-tracker.log   # omit or leave empty for stdout only

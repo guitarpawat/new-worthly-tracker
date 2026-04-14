@@ -1,0 +1,340 @@
+.progress-hero {
+  align-items: flex-start;
+}
+
+.progress-hero-actions {
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.progress-date-control {
+  gap: 6px;
+}
+
+.progress-date-select {
+  min-width: 190px;
+}
+
+.progress-goal-date-button {
+  width: 100%;
+  text-align: left;
+}
+
+.progress-goal-date-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.progress-goal-date-shell {
+  min-width: 0;
+}
+
+.progress-chart-panel,
+.progress-allocation-panel,
+.progress-goals-panel,
+.progress-empty {
+  padding: 18px 22px;
+}
+
+.progress-mode-row,
+.progress-allocation-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.progress-projection-control {
+  margin-left: auto;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.progress-projection-control .field-label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.progress-chip-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.progress-chip {
+  border-color: #d7c79d;
+  background: #fbf6e8;
+}
+
+.progress-chip-active {
+  background: #f3e2af;
+  border-color: #c79f3d;
+  color: #7b530c;
+}
+
+.progress-chart-shell {
+  margin-top: 14px;
+  border: 1px solid #e4ddd1;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(250, 245, 235, 0.75), rgba(255, 255, 255, 0.96));
+  padding: 18px;
+}
+
+.progress-pie-shell {
+  height: 420px;
+}
+
+.progress-chart-canvas {
+  width: 100%;
+  height: 420px;
+  display: block;
+}
+
+.progress-note {
+  margin: 12px 0 0;
+}
+
+.progress-summary-hint {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding-left: 6px;
+}
+
+.progress-goals-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.progress-goals-table,
+.progress-table {
+  width: 100%;
+  min-width: 980px;
+}
+
+.progress-goal-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.progress-goal-dialog {
+  width: min(540px, calc(100vw - 28px));
+}
+
+.progress-goal-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.progress-allocation-legend {
+  margin-top: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.progress-allocation-chart-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dialog-card.progress-allocation-dialog {
+  width: min(1560px, calc(100vw - 56px));
+  max-width: calc(100vw - 56px);
+  max-height: calc(100vh - 12px);
+  overflow: hidden;
+}
+
+.progress-allocation-controls {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.progress-allocation-close-button {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.progress-allocation-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
+  gap: 24px;
+  align-items: start;
+  min-height: 0;
+}
+
+.progress-allocation-sidebar {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-height: 0;
+  max-height: 560px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.progress-allocation-controls .progress-chip-group {
+  flex-wrap: nowrap;
+  min-width: 0;
+  gap: 8px;
+}
+
+.progress-allocation-controls .progress-chip {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.progress-allocation-dialog .progress-pie-shell,
+.progress-allocation-dialog .progress-chart-canvas {
+  height: 460px;
+}
+
+.progress-allocation-dialog .progress-pie-shell {
+  max-width: 760px;
+  justify-self: center;
+  width: 100%;
+}
+
+.progress-allocation-legend-row {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) 92px minmax(140px, auto);
+  gap: 12px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.progress-allocation-legend-header {
+  padding-bottom: 8px;
+  color: #8b5d12;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.progress-allocation-legend-header .progress-allocation-percent,
+.progress-allocation-legend-header .progress-allocation-value {
+  color: #8b5d12;
+}
+
+.progress-allocation-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+}
+
+.progress-allocation-name {
+  min-width: 0;
+  font-weight: 600;
+}
+
+.progress-allocation-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.progress-allocation-percent {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: right;
+  color: #6b665d;
+}
+
+.progress-allocation-total-list {
+  margin-top: 2px;
+}
+
+.progress-allocation-total-row {
+  border-top: 1px solid #e5dccd;
+  padding-top: 12px;
+}
+
+.progress-allocation-total-swatch {
+  background: #f0d487;
+  border: 1px solid #c79f3d;
+}
+
+.delta-caution {
+  color: #8a6600;
+  background: #f8efc6;
+}
+
+.progress-summary-row-active {
+  background: #fbf4e2;
+}
+
+.progress-table tbody tr[data-progress-allocation-date]:hover {
+  background: #f7efdb;
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .progress-hero {
+    align-items: stretch;
+  }
+
+  .progress-hero-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 860px) {
+  .dialog-card.progress-allocation-dialog {
+    width: min(100%, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
+  }
+
+  .progress-hero-actions,
+  .progress-allocation-controls,
+  .progress-mode-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .progress-projection-control {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .progress-date-select {
+    min-width: 100%;
+  }
+
+  .progress-chip-group {
+    width: 100%;
+  }
+
+  .progress-chip {
+    flex: 1 1 180px;
+  }
+
+  .progress-chart-canvas,
+  .progress-pie-shell {
+    height: 360px;
+  }
+
+  .progress-allocation-controls {
+    flex-wrap: wrap;
+  }
+
+  .progress-allocation-controls .progress-chip-group {
+    flex-wrap: wrap;
+  }
+
+  .progress-allocation-content {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-allocation-dialog .progress-pie-shell,
+  .progress-allocation-dialog .progress-chart-canvas {
+    height: 360px;
+  }
+}

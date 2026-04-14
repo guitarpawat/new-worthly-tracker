@@ -1,0 +1,195 @@
+@media (max-width: 1400px) {
+  .app-layout {
+    padding: 16px;
+  }
+
+  .hero {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .actions {
+    justify-content: center;
+  }
+
+  .home-menu-panel {
+    right: 50%;
+    transform: translateX(50%);
+    min-width: min(320px, calc(100vw - 40px));
+  }
+
+  .asset-management-intro {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .asset-management-subnav {
+    justify-content: center;
+  }
+
+  .asset-reorder-header,
+  .asset-reorder-toolbar {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+  }
+
+  .asset-management-single-column {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .asset-management-feature-grid,
+  .asset-management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .asset-management-form-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .asset-management-form-footer-left,
+  .asset-management-toggle-row {
+    gap: 12px;
+    justify-content: flex-start;
+  }
+
+  .field-inline-toggle {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .summary-strip-grid {
+    min-width: 960px;
+  }
+
+  .snapshot-selector-inline {
+    flex-wrap: wrap;
+  }
+
+  .editor-toolbar-row {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .removed-rows-strip {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .toolbar-inline-copy {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .asset-picker {
+    justify-content: center;
+  }
+
+  .removed-rows-actions {
+    justify-content: center;
+  }
+
+  .table-scroll {
+    padding-bottom: 4px;
+  }
+
+  table {
+    min-width: 1410px;
+    width: max-content;
+    table-layout: auto;
+  }
+
+  .management-table {
+    width: 100%;
+    min-width: 100%;
+    table-layout: auto;
+  }
+
+  .asset-management-assets-table {
+    min-width: 960px;
+  }
+
+  .col-name {
+    width: 200px;
+  }
+
+  .col-broker {
+    width: 140px;
+  }
+
+  .col-bought,
+  .col-current,
+  .col-profit {
+    width: 190px;
+  }
+
+  .col-profit-percent {
+    width: 130px;
+  }
+
+  .col-notes {
+    width: 270px;
+  }
+
+  .col-actions {
+    width: 100px;
+  }
+
+  th,
+  td {
+    padding: 12px 12px;
+    font-size: 0.9rem;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .hero h1 {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 860px) {
+  .asset-management-form-footer {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .asset-management-form-footer-left {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+    margin: 0;
+  }
+
+  .field-inline-toggle {
+    display: grid;
+    justify-items: start;
+    text-align: left;
+    width: auto;
+    min-width: 0;
+  }
+
+  .asset-management-form .field-inline-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-items: unset;
+  }
+
+  .asset-reorder-filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-items: unset;
+  }
+
+  .asset-management-toggle-row {
+    width: 100%;
+    margin: 0;
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,288 @@
+.table-panel {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.asset-management-layout {
+  gap: 20px;
+}
+
+.asset-management-subnav {
+  padding: 14px 18px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.asset-management-subnav-button {
+  border-color: #d7c7a3;
+  background: #fffaf0;
+}
+
+.asset-management-subnav-button-active {
+  border-color: #c9a762;
+  background: #fff2cf;
+  color: #7b530c;
+}
+
+.asset-management-intro {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+
+.asset-management-intro-copy h2 {
+  margin-top: 4px;
+}
+
+.asset-management-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.asset-management-single-column {
+  display: grid;
+  grid-template-columns: minmax(0, 920px);
+  justify-content: center;
+}
+
+.asset-management-centered-shell {
+  display: grid;
+  justify-items: center;
+}
+
+.asset-management-table-shell {
+  width: 100%;
+  min-width: 0;
+}
+
+.asset-management-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.asset-management-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.asset-management-feature-card {
+  padding: 22px 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.asset-management-feature-card h2 {
+  margin-top: 2px;
+}
+
+.asset-management-feature-card .button {
+  justify-self: start;
+}
+
+.asset-management-card {
+  overflow: visible;
+}
+
+.asset-management-centered-card {
+  width: min(100%, 820px);
+  margin: 0 auto;
+}
+
+.asset-management-form {
+  padding: 18px 20px 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.asset-management-form-two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.asset-management-card-actions {
+  padding: 0;
+  justify-content: flex-end;
+}
+
+.asset-management-select {
+  min-width: 100%;
+}
+
+.asset-management-note {
+  margin: 0;
+  padding: 0 20px 16px;
+  font-size: 0.86rem;
+  color: #7d776d;
+}
+
+.asset-management-error {
+  margin: 0;
+}
+
+.asset-management-inline-editor {
+  padding: 18px;
+  border-top: 1px solid #e6e1d9;
+  background: #fcfbf8;
+}
+
+.asset-management-dialog-backdrop {
+  z-index: 80;
+  align-items: start;
+  overflow-y: auto;
+}
+
+.asset-management-dialog-shell {
+  position: relative;
+  z-index: 81;
+  isolation: isolate;
+  width: min(100%, 860px);
+  margin-top: 28px;
+}
+
+.management-inline-row td {
+  padding: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.management-row-active td {
+  background: #fff8e6;
+}
+
+.management-table tbody tr {
+  cursor: pointer;
+}
+
+.management-table tbody tr:hover td {
+  background: #faf4e6;
+}
+
+.asset-management-status-pill {
+  min-width: 50px;
+  justify-content: center;
+}
+
+.toggle-field {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  cursor: pointer;
+}
+
+.toggle-field-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-field-input:focus-visible + .mock-toggle {
+  outline: 2px solid rgba(139, 93, 18, 0.18);
+  outline-offset: 2px;
+}
+
+.toggle-field-input:checked + .mock-toggle {
+  justify-content: flex-end;
+  background: #fff4dc;
+  border-color: #d8bb7b;
+}
+
+.toggle-field-input:not(:checked) + .mock-toggle {
+  justify-content: flex-start;
+  background: #f4efe5;
+  border-color: #d8d1c5;
+}
+
+.mock-toggle {
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  border: 1px solid #d8d1c5;
+  background: #ece8df;
+  box-shadow: inset 0 1px 2px rgba(29, 28, 26, 0.08);
+}
+
+.mock-toggle-on {
+  justify-content: flex-end;
+  background: #fff4dc;
+  border-color: #d8bb7b;
+}
+
+.mock-toggle-off {
+  justify-content: flex-start;
+  background: #f4efe5;
+  border-color: #d8d1c5;
+}
+
+.mock-toggle-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #e8c46b;
+  box-shadow: 0 2px 5px rgba(29, 28, 26, 0.16);
+}
+
+.management-table {
+  width: 100%;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.asset-management-types-table {
+  min-width: 100%;
+}
+
+.asset-management-assets-table {
+  width: 100%;
+  min-width: 1180px;
+}
+
+.asset-management-toggle-row {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.field-inline-toggle {
+  min-width: 124px;
+  justify-items: start;
+  text-align: left;
+}
+
+.asset-management-form .field-inline-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: auto;
+}
+
+.asset-management-form-footer {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: nowrap;
+}
+
+.asset-management-form-footer-wide {
+  grid-column: 1 / -1;
+}
+
+.asset-management-form-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}

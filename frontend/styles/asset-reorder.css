@@ -1,0 +1,100 @@
+.asset-reorder-panel {
+  display: grid;
+  gap: 18px;
+  padding: 22px 24px 24px;
+}
+
+.asset-reorder-header {
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.asset-reorder-toolbar {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.asset-reorder-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6f685d;
+  font-size: 0.92rem;
+}
+
+.asset-reorder-filter-toggle {
+  min-width: auto;
+  gap: 10px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.asset-reorder-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.asset-reorder-group {
+  border: 1px solid #e6e1d9;
+  border-radius: 18px;
+  background: #fffdfa;
+  padding: 16px 18px 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.asset-reorder-list {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px dashed #e4d7b7;
+  border-radius: 18px;
+  background: #fffcf4;
+}
+
+.asset-reorder-item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid #e6dcc5;
+  border-radius: 14px;
+  padding: 14px 16px;
+  background: #fffaf0;
+  cursor: grab;
+}
+
+.asset-reorder-item:hover {
+  border-color: #d7c7a3;
+  background: #fff6e1;
+}
+
+.asset-reorder-item-dragging {
+  opacity: 0.45;
+}
+
+.asset-reorder-handle {
+  color: #b38b36;
+  font-weight: 700;
+  letter-spacing: -1px;
+  user-select: none;
+}
+
+.asset-reorder-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.asset-reorder-copy strong {
+  font-size: 0.98rem;
+  color: #2e271c;
+}
+
+.asset-reorder-copy span {
+  color: #746b5d;
+  font-size: 0.88rem;
+}

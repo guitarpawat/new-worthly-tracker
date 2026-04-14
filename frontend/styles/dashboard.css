@@ -1,0 +1,67 @@
+.summary-strip {
+  overflow-x: auto;
+  padding: 0;
+}
+
+.summary-strip-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(165px, 1fr));
+  min-width: 1180px;
+}
+
+.summary-item {
+  padding: 12px 14px;
+  border-right: 1px solid #e8e2d9;
+}
+
+.summary-item:last-child {
+  border-right: none;
+}
+
+.metric-value {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1d1c1a;
+}
+
+.metric-delta {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.positive {
+  color: #0f7a4d;
+}
+
+.negative {
+  color: #b42318;
+}
+
+.neutral {
+  color: #6b675f;
+}
+
+.muted {
+  color: #9a968d;
+}
+
+.delta-positive {
+  color: #0f7a4d;
+  background: #e7f8ef;
+}
+
+.delta-negative {
+  color: #b42318;
+  background: #fdeeee;
+}
+
+.delta-neutral {
+  color: #6b675f;
+  background: #f1eee9;
+}

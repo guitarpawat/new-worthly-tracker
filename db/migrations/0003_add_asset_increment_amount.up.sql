@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE assets
+    ADD COLUMN increment_amount REAL NOT NULL DEFAULT 0;
+
+COMMIT;
