@@ -27,36 +27,91 @@ It is built with Go, Wails, and SQLite, with a spreadsheet-style light UI aimed 
 - Wails CLI
 - SQLite is embedded through `modernc.org/sqlite`, so CGO is not required
 
-Linux note:
+## Development
 
-- On Fedora and other newer Linux distributions, run Wails with `-tags webkit2_41`.
-- You still need the normal Wails desktop build dependencies installed for your platform.
+Start the Wails development server with auto reload:
 
-## Run
+### Linux
 
-Start the app with the default config location:
-
-```bash
-go run .
-```
-
-Run with a custom config file:
-
-```bash
-go run . --config /path/to/config.yaml
-```
-
-Auto-reload during development:
+On Fedora and similar newer distributions:
 
 ```bash
 wails dev -tags webkit2_41
 ```
 
-Build a desktop executable:
+### Windows
+
+```powershell
+wails dev
+```
+
+### macOS
+
+```bash
+wails dev
+```
+
+## Build
+
+### Linux
 
 ```bash
 wails build -tags webkit2_41
 ```
+
+The built binary will be written to `build/bin/`.
+
+### Windows
+
+Install first:
+
+- Go 1.26+
+- Node.js
+- Wails CLI
+- Microsoft WebView2 runtime
+
+Then build from the project root:
+
+```powershell
+wails build
+```
+
+If you want Wails to verify your environment first:
+
+```powershell
+wails doctor
+```
+
+The built executable will be written to `build/bin/`.
+
+### macOS
+
+Install first:
+
+- Go 1.26+
+- Node.js
+- Wails CLI
+- Xcode Command Line Tools
+
+Install the Apple build tools if needed:
+
+```bash
+xcode-select --install
+```
+
+Then build from the project root:
+
+```bash
+wails build
+```
+
+If you want Wails to verify your environment first:
+
+```bash
+wails doctor
+```
+
+The built application will be written to `build/bin/`.
 
 ## Test
 
