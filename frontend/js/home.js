@@ -104,8 +104,13 @@
     const groups = page.Groups.map((group) => `
       <section class="panel table-panel">
         <div class="table-header">
-          <h2>${escapeHTML(group.AssetTypeName)}</h2>
-          <span>${group.Rows.length} asset(s)</span>
+          <div>
+            <h2>${escapeHTML(group.AssetTypeName)}</h2>
+          </div>
+          <div class="home-group-header-side">
+            ${renderGroupSummary(group)}
+            <span class="home-group-count">${group.Summary?.AssetCount || 0} asset(s)</span>
+          </div>
         </div>
         <div class="table-scroll">
           <table>
@@ -621,12 +626,12 @@
     const comparison = page.Comparison || null;
     return [
       metric("Bought Price", formatTHB(page.Summary.TotalBought), comparison?.BoughtChange),
-      metric("Current Price", formatTHB(page.Summary.TotalCurrent), comparison?.CurrentChange),
       metric("Current Profit", formatTHB(page.Summary.TotalProfit), comparison?.ProfitChange),
       metric("% Profit", formatPercent(page.Summary.TotalProfitRate), comparison?.ProfitRateChange, true),
       metric("Total Cash", formatTHB(page.Summary.TotalCash), comparison?.CashChange),
       metric("Total Non Cash", formatTHB(page.Summary.TotalNonCash), comparison?.NonCashChange),
       metric("% Cash / Total", formatPercent(page.Summary.CashRatio), comparison?.CashRatioChange, true),
+      metric("Current Net Worth", formatTHB(page.Summary.TotalCurrent), comparison?.CurrentChange),
     ];
   }
 
@@ -677,6 +682,13 @@
           })),
         })}
       </div>
+    `;
+  }
+
+  function renderGroupSummary(group) {
+    const summary = group.Summary || {};
+    return `
+      <span class="home-group-count">${escapeHTML(formatTHB(summary.TotalCurrent || 0))}</span>
     `;
   }
 

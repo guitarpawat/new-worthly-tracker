@@ -163,6 +163,7 @@
     if (trigger) {
       event.preventDefault();
       toggleControl(trigger.dataset.controlTrigger);
+      trigger.focus();
       return true;
     }
 
@@ -209,18 +210,117 @@
   }
 
   function handleControlKeydown(event) {
-    if (!openControlID || event.key !== "Escape") {
-      return false;
+    const target = event.target instanceof root.Element ? event.target : null;
+    const trigger = target?.closest("[data-control-trigger]");
+    if (trigger) {
+      return handleTriggerKeydown(event, trigger.dataset.controlTrigger || "");
     }
 
-    const target = event.target instanceof root.Element ? event.target : null;
+    if (target) {
+      const option = target.closest("[data-control-select-option]");
+      if (option) {
+        return handleSelectOptionKeydown(event, option);
+      }
+    }
+
+    if (!openControlID || event.key !== "Escape") {
+      if (!openControlID || !isArrowNavigationKey(event.key)) {
+        return false;
+      }
+
+      const openControlElement = findControl(openControlID);
+      if (!openControlElement || openControlElement.dataset.controlKind !== "select") {
+        return false;
+      }
+
+      event.preventDefault();
+      focusFromOpenControl(event.key === "ArrowDown" ? 1 : -1);
+      return true;
+    }
+
     if (target && !target.closest(`[data-control-id="${openControlID}"]`)) {
       return false;
     }
 
     event.preventDefault();
+    const triggerToFocus = findControlTrigger(openControlID);
     closeOpenControl();
+    triggerToFocus?.focus();
     return true;
+  }
+
+  function handleTriggerKeydown(event, controlID) {
+    const control = findControl(controlID);
+    if (!control) {
+      return false;
+    }
+
+    const kind = control.dataset.controlKind;
+    if (kind === "select") {
+      if ((event.key === "Enter" || event.key === " ") && openControlID !== controlID) {
+        event.preventDefault();
+        openControl(controlID);
+        focusSelectedOrFirstOption(controlID);
+        return true;
+      }
+      if ((event.key === "ArrowDown" || event.key === "ArrowUp") && openControlID !== controlID) {
+        event.preventDefault();
+        openControl(controlID);
+        focusSelectedOrFirstOption(controlID, event.key === "ArrowUp" ? "last" : "first");
+        return true;
+      }
+      if (openControlID === controlID && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+        event.preventDefault();
+        focusFromOpenControl(event.key === "ArrowDown" ? 1 : -1);
+        return true;
+      }
+    }
+
+    if ((event.key === "Enter" || event.key === " ") && openControlID !== controlID) {
+      event.preventDefault();
+      openControl(controlID);
+      return true;
+    }
+
+    if (event.key === "Escape" && openControlID === controlID) {
+      event.preventDefault();
+      closeOpenControl();
+      return true;
+    }
+
+    return false;
+  }
+
+  function handleSelectOptionKeydown(event, option) {
+    const controlID = option.dataset.controlSelectOption || "";
+    if (!controlID) {
+      return false;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      commitSelectValue(controlID, option.dataset.value || "", option.dataset.label || option.textContent || "");
+      findControlTrigger(controlID)?.focus();
+      return true;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      focusAdjacentOption(controlID, event.key === "ArrowDown" ? 1 : -1);
+      return true;
+    }
+    if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      focusSelectedOrFirstOption(controlID, event.key === "Home" ? "first" : "last");
+      return true;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeOpenControl();
+      findControlTrigger(controlID)?.focus();
+      return true;
+    }
+
+    return false;
   }
 
   function setControlValue(controlID, value) {
@@ -408,6 +508,54 @@
     for (const option of root.document.querySelectorAll(`[data-control-select-option="${controlID}"]`)) {
       option.classList.toggle("custom-select-option-active", option.dataset.value === String(value));
     }
+  }
+
+  function findSelectOptions(controlID) {
+    return Array.from(root.document?.querySelectorAll(`[data-control-select-option="${cssEscape(controlID)}"]:not([disabled])`) || []);
+  }
+
+  function focusSelectedOrFirstOption(controlID, fallback = "first") {
+    const options = findSelectOptions(controlID);
+    if (!options.length) {
+      return;
+    }
+    const input = findControlInput(controlID);
+    const selected = options.find((option) => option.dataset.value === String(input?.value || ""));
+    const target = selected || (fallback === "last" ? options[options.length - 1] : options[0]);
+    target.focus();
+  }
+
+  function focusAdjacentOption(controlID, delta) {
+    const options = findSelectOptions(controlID);
+    if (!options.length) {
+      return;
+    }
+    const active = root.document?.activeElement;
+    const currentIndex = options.findIndex((option) => option === active);
+    const nextIndex = currentIndex < 0
+      ? (delta < 0 ? options.length - 1 : 0)
+      : Math.max(0, Math.min(options.length - 1, currentIndex + delta));
+    options[nextIndex].focus();
+  }
+
+  function focusFromOpenControl(delta) {
+    if (!openControlID) {
+      return;
+    }
+
+    const active = root.document?.activeElement;
+    const openControlElement = findControl(openControlID);
+    const isInsideOpenControl = Boolean(active && openControlElement?.contains(active));
+    if (!isInsideOpenControl || active?.hasAttribute("data-control-trigger")) {
+      focusSelectedOrFirstOption(openControlID, delta < 0 ? "last" : "first");
+      return;
+    }
+
+    focusAdjacentOption(openControlID, delta);
+  }
+
+  function isArrowNavigationKey(key) {
+    return key === "ArrowDown" || key === "ArrowUp";
   }
 
   function findControl(controlID) {

@@ -244,15 +244,23 @@ func buildHomeGroups(items []dto.SnapshotItem) []dto.HomeAssetGroup {
 		if len(groups) == 0 || groups[lastGroupIndex].AssetTypeName != item.AssetTypeName {
 			groups = append(groups, dto.HomeAssetGroup{
 				AssetTypeName: item.AssetTypeName,
+				Summary:       dto.HomeAssetGroupSummary{},
 				Rows:          []dto.HomeAssetRow{row},
 			})
+			updateHomeGroupSummary(&groups[len(groups)-1].Summary, item)
 			continue
 		}
 
 		groups[lastGroupIndex].Rows = append(groups[lastGroupIndex].Rows, row)
+		updateHomeGroupSummary(&groups[lastGroupIndex].Summary, item)
 	}
 
 	return groups
+}
+
+func updateHomeGroupSummary(summary *dto.HomeAssetGroupSummary, item dto.SnapshotItem) {
+	summary.AssetCount += 1
+	summary.TotalCurrent += item.CurrentPrice
 }
 
 func buildSnapshotFormPage(mode string, snapshot *dto.EditableSnapshot) dto.EditSnapshotPage {

@@ -15,6 +15,10 @@
   min-width: 190px;
 }
 
+.progress-quick-range-select {
+  min-width: 210px;
+}
+
 .progress-goal-date-button {
   width: 100%;
   text-align: left;
@@ -103,6 +107,22 @@
   margin-top: 10px;
   margin-bottom: 10px;
   padding-left: 6px;
+}
+
+.progress-sort-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.progress-sort-button:hover {
+  color: #6f5419;
 }
 
 .progress-goals-panel {

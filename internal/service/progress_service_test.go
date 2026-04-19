@@ -61,13 +61,13 @@ func TestProgressService_GetPageBuildsTrendSummaryProjectionAllocationAndGoalEst
 		rows: []dto.ProgressSnapshotItem{
 			{SnapshotDate: "2026-01-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: 10000, BoughtPrice: 9000},
 			{SnapshotDate: "2026-01-12", AssetName: "Wallet", AssetTypeName: "Cash", CurrentPrice: 2000, BoughtPrice: 500, IsCash: true},
-			{SnapshotDate: "2026-01-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: -1000, BoughtPrice: 0, IsCash: true},
+			{SnapshotDate: "2026-01-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: -1000, BoughtPrice: 0, IsCash: true, IsLiability: true},
 			{SnapshotDate: "2026-02-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: 11000, BoughtPrice: 9500},
 			{SnapshotDate: "2026-02-12", AssetName: "Wallet", AssetTypeName: "Cash", CurrentPrice: 2400, BoughtPrice: 500, IsCash: true},
-			{SnapshotDate: "2026-02-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: -900, BoughtPrice: 0, IsCash: true},
+			{SnapshotDate: "2026-02-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: -900, BoughtPrice: 0, IsCash: true, IsLiability: true},
 			{SnapshotDate: "2026-03-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: 12500, BoughtPrice: 10000},
 			{SnapshotDate: "2026-03-12", AssetName: "Wallet", AssetTypeName: "Cash", CurrentPrice: 2600, BoughtPrice: 500, IsCash: true},
-			{SnapshotDate: "2026-03-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: -800, BoughtPrice: 0, IsCash: true},
+			{SnapshotDate: "2026-03-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: -800, BoughtPrice: 0, IsCash: true, IsLiability: true},
 		},
 	}, goalReaderStub{
 		goals: []dto.GoalRow{

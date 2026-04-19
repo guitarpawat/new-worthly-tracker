@@ -7,9 +7,12 @@ It is built with Go, Wails, and SQLite, with a spreadsheet-style light UI aimed 
 
 - Record net worth snapshots by date
 - Group assets by asset type
+- Show per-asset-type summaries on the home page
 - Compare the current snapshot with the previous snapshot
 - Add, edit, delete, and reorder assets and asset types
-- Track progress over time with trend charts, allocation charts, and goals
+- Use custom in-app date pickers and dropdowns with keyboard support
+- Track progress over time with trend charts, summary tables, allocation popups, and goals
+- Jump to the latest 12/18/24/36-month progress range quickly
 - Keep historical snapshots intact with soft delete
 
 ## Main Concepts
@@ -191,11 +194,6 @@ Current implemented areas:
 - Asset management
 - Asset/asset-type reorder
 - Progress and goals
-
-## Future Plans
-- Add summary for each asset type in homepage
-- Summary table should be sortable by date. The latest should be on the top by default.
-- Order allocation summary by snapshot ordering.
 
 # Notices
 The author of this project uses AI to generate code for almost every part in this project. 

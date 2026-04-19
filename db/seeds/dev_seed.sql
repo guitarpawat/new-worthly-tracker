@@ -5,17 +5,17 @@ INSERT INTO asset_types (id, name, ordering, is_active) VALUES
     (4, 'Savings', 4, TRUE),
     (5, 'Legacy', 5, FALSE);
 
-INSERT INTO assets (id, asset_type_id, name, broker, is_cash, is_active, auto_increment, ordering) VALUES
-    (1, 1, 'Emergency Fund', 'SCB', TRUE, TRUE, 0, 1),
-    (2, 2, 'SET50 ETF', 'KKP', FALSE, TRUE, 6500, 1),
-    (3, 2, 'US Index Fund', 'IBKR', FALSE, TRUE, 5200, 2),
-    (4, 3, 'Visa Platinum', 'KBank', TRUE, TRUE, 0, 1),
-    (5, 2, 'Gold Fund', 'KKP', FALSE, TRUE, 3200, 3),
-    (6, 1, 'Daily Wallet', 'SCB', TRUE, TRUE, 0, 2),
-    (7, 4, 'Travel Fund', 'TTB', TRUE, TRUE, 0, 1),
-    (8, 2, 'Old Mutual Fund', 'IBKR', FALSE, FALSE, 0, 4),
-    (9, 3, 'MasterCard Titanium', 'KTC', TRUE, FALSE, 0, 2),
-    (10, 5, 'Legacy Bond', 'Local Bank', FALSE, TRUE, 0, 1);
+INSERT INTO assets (id, asset_type_id, name, broker, is_cash, is_liability, is_active, auto_increment, ordering) VALUES
+    (1, 1, 'Emergency Fund', 'SCB', TRUE, FALSE, TRUE, 0, 1),
+    (2, 2, 'SET50 ETF', 'KKP', FALSE, FALSE, TRUE, 6500, 1),
+    (3, 2, 'US Index Fund', 'IBKR', FALSE, FALSE, TRUE, 5200, 2),
+    (4, 3, 'Visa Platinum', 'KBank', TRUE, TRUE, TRUE, 0, 1),
+    (5, 2, 'Gold Fund', 'KKP', FALSE, FALSE, TRUE, 3200, 3),
+    (6, 1, 'Daily Wallet', 'SCB', TRUE, FALSE, TRUE, 0, 2),
+    (7, 4, 'Travel Fund', 'TTB', TRUE, FALSE, TRUE, 0, 1),
+    (8, 2, 'Old Mutual Fund', 'IBKR', FALSE, FALSE, FALSE, 0, 4),
+    (9, 3, 'MasterCard Titanium', 'KTC', TRUE, TRUE, FALSE, 0, 2),
+    (10, 5, 'Legacy Bond', 'Local Bank', FALSE, FALSE, TRUE, 0, 1);
 
 WITH RECURSIVE months(snapshot_id, record_date) AS (
     VALUES (1, date('2024-05-12'))

@@ -354,7 +354,10 @@ test("render reorder pages show expected headings", () => {
   ensureAssetReorderState(state.assetManagementPage);
 
   assert.match(renderAssetTypeReorderPage(), /Reorder Asset Types/);
-  assert.match(renderAssetReorderPage(), /Reorder Assets/);
+  const markup = renderAssetReorderPage();
+  assert.match(markup, /Reorder Assets/);
+  assert.match(markup, /data-asset-reorder-toggle="1"/);
+  assert.match(markup, /Hidden/);
 });
 
 test("renderReorderFilterToggle uses the shared toggle markup", () => {
@@ -463,6 +466,7 @@ test("buildAssetCreatePayload forces cash auto increment to zero", () => {
     assetTypeID: 1,
     broker: "SCB",
     isCash: true,
+    isLiability: false,
     isActive: true,
     autoIncrement: "6500.00",
   });
@@ -472,6 +476,7 @@ test("buildAssetCreatePayload forces cash auto increment to zero", () => {
     AssetTypeID: 1,
     Broker: "SCB",
     IsCash: true,
+    IsLiability: false,
     IsActive: true,
     AutoIncrement: 0,
   });
@@ -570,8 +575,9 @@ test("renderAssetEditorCard keeps toggles left and actions right in one footer r
 
   assert.match(
     markup,
-    /asset-management-form-footer asset-management-form-footer-wide[\s\S]*asset-management-toggle-row[\s\S]*Cash Asset[\s\S]*Active[\s\S]*asset-management-card-actions[\s\S]*Create Asset[\s\S]*Reset/,
+    /asset-management-form-footer asset-management-form-footer-wide[\s\S]*asset-management-toggle-row[\s\S]*Cash Asset[\s\S]*Liability[\s\S]*asset-management-card-actions[\s\S]*Create Asset[\s\S]*Reset/,
   );
+  assert.doesNotMatch(markup, />Active</);
 });
 
 test("renderAssetEditorCard supports custom close label for snapshot modal reuse", () => {
@@ -602,8 +608,32 @@ test("renderAssetTypeEditorCard keeps active toggle left and actions right in on
 
   assert.match(
     markup,
-    /asset-management-form-footer[\s\S]*asset-management-form-footer-left[\s\S]*Active[\s\S]*asset-management-card-actions[\s\S]*Create Type[\s\S]*Reset/,
+    /asset-management-form-footer[\s\S]*asset-management-form-footer-left[\s\S]*asset-management-card-actions[\s\S]*Create Type[\s\S]*Reset/,
   );
+  assert.doesNotMatch(markup, />Active</);
+});
+
+test("render edit forms keep active toggle visible", () => {
+  const assetMarkup = renderAssetEditorCard({
+    ActiveAssetTypes: [{ ID: 1, Name: "Cash" }],
+  }, {
+    id: 7,
+    name: "Wallet",
+    assetTypeID: 1,
+    broker: "",
+    isCash: true,
+    isLiability: false,
+    isActive: true,
+    autoIncrement: "0.00",
+  });
+  const assetTypeMarkup = renderAssetTypeEditorCard({
+    id: 5,
+    name: "Cash",
+    isActive: true,
+  });
+
+  assert.match(assetMarkup, />Active</);
+  assert.match(assetTypeMarkup, />Active</);
 });
 
 test("renderAssetTypeEditorCard supports custom close label for snapshot modal reuse", () => {

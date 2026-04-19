@@ -22,6 +22,7 @@
       signature,
       typeFilterActiveOnly: true,
       assetFilterActiveOnly: true,
+      expandedAssetTypeIDs: [],
       typeRows: cloneRows(page.AssetTypes || []),
       originalTypeRows: cloneRows(page.AssetTypes || []),
       assetGroups: buildAssetGroups(page),
@@ -119,18 +120,31 @@
         <div class="asset-reorder-groups">
           ${groups.map((group) => `
             <section class="asset-reorder-group">
-              <div class="table-header">
-                <h3>${escapeHTML(group.AssetTypeName)}</h3>
-                <span>${group.Rows.length} visible asset(s)</span>
+              <div
+                class="table-header asset-reorder-group-header"
+                data-asset-reorder-toggle="${group.AssetTypeID}"
+                role="button"
+                tabindex="0"
+                aria-expanded="${reorder.expandedAssetTypeIDs.includes(group.AssetTypeID) ? "true" : "false"}"
+              >
+                <div>
+                  <h3>${escapeHTML(group.AssetTypeName)}</h3>
+                  <span>${group.Rows.length} visible asset(s)</span>
+                </div>
+                <span class="asset-reorder-group-state">
+                  ${reorder.expandedAssetTypeIDs.includes(group.AssetTypeID) ? "Shown" : "Hidden"}
+                </span>
               </div>
-              <div class="asset-reorder-list" data-reorder-list="asset" data-asset-type-id="${group.AssetTypeID}">
-                ${group.Rows.map((row) => renderReorderItem({
-                  id: row.ID,
-                  title: row.Name,
-                  meta: row.Broker || row.AssetTypeName,
-                  active: row.IsActive,
-                })).join("")}
-              </div>
+              ${reorder.expandedAssetTypeIDs.includes(group.AssetTypeID) ? `
+                <div class="asset-reorder-list" data-reorder-list="asset" data-asset-type-id="${group.AssetTypeID}">
+                  ${group.Rows.map((row) => renderReorderItem({
+                    id: row.ID,
+                    title: row.Name,
+                    meta: row.Broker || row.AssetTypeName,
+                    active: row.IsActive,
+                  })).join("")}
+                </div>
+              ` : ""}
             </section>
           `).join("")}
         </div>
@@ -146,9 +160,8 @@
         data-reorder-id="${config.id}"
       >
         <span class="asset-reorder-handle" aria-hidden="true">::</span>
-        <div class="asset-reorder-copy">
-          <strong>${escapeHTML(config.title)}</strong>
-          <span>${escapeHTML(config.meta)}</span>
+        <div class="asset-reorder-copy asset-reorder-copy-inline">
+          <strong>${escapeHTML(config.title)}</strong>${config.meta ? `<span class="asset-reorder-meta"> &middot; ${escapeHTML(config.meta)}</span>` : ""}
         </div>
         <span class="metric-delta ${config.active ? "delta-positive" : "delta-negative"}">${config.active ? "Yes" : "No"}</span>
       </article>
@@ -273,6 +286,21 @@
         getDragScope: () => `asset:${assetTypeID}`,
       });
     }
+
+    for (const header of root.document.querySelectorAll("[data-asset-reorder-toggle]")) {
+      header.addEventListener("click", () => {
+        toggleExpandedAssetGroup(Number(header.dataset.assetReorderToggle));
+        renderCurrentReorderPage(app);
+      });
+      header.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+        event.preventDefault();
+        toggleExpandedAssetGroup(Number(header.dataset.assetReorderToggle));
+        renderCurrentReorderPage(app);
+      });
+    }
   }
 
   function bindReorderDragList(list, config) {
@@ -339,6 +367,15 @@
     if (page && typeof page.renderAssetManagementPage === "function") {
       page.renderAssetManagementPage(app);
     }
+  }
+
+  function toggleExpandedAssetGroup(assetTypeID) {
+    const expanded = state.assetReorder.expandedAssetTypeIDs || [];
+    if (expanded.includes(assetTypeID)) {
+      state.assetReorder.expandedAssetTypeIDs = expanded.filter((id) => id !== assetTypeID);
+      return;
+    }
+    state.assetReorder.expandedAssetTypeIDs = [...expanded, assetTypeID];
   }
 
   function getVisibleTypeRows(reorder) {

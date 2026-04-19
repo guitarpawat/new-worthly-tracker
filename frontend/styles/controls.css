@@ -105,9 +105,23 @@
   background: #faf4e6;
 }
 
+.custom-select-option:focus,
+.custom-select-option:focus-visible {
+  outline: none;
+  background: #faf4e6;
+  box-shadow: inset 0 0 0 1px #c79f3d;
+  color: #7b530c;
+}
+
 .custom-select-option-active {
   background: #fff2cf;
   color: #7b530c;
+}
+
+.custom-select-option-active:focus,
+.custom-select-option-active:focus-visible {
+  background: #fff2cf;
+  box-shadow: inset 0 0 0 1px #b48324;
 }
 
 .custom-control-empty {

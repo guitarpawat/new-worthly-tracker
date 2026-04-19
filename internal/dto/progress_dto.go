@@ -13,6 +13,7 @@ type ProgressSnapshotItem struct {
 	CurrentPrice  float64 `db:"current_price"`
 	BoughtPrice   float64 `db:"bought_price"`
 	IsCash        bool    `db:"is_cash"`
+	IsLiability   bool    `db:"is_liability"`
 }
 
 type ProgressPage struct {

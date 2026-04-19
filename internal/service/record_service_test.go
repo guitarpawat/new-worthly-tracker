@@ -117,6 +117,14 @@ func TestRecordService_BuildHomePageCalculatesGroupedSummaryAndProfitRules(t *te
 	if page.Groups[1].Rows[1].AssetName != "SET50 ETF" {
 		t.Fatalf("expected second investment row to be SET50 ETF, got %q", page.Groups[1].Rows[1].AssetName)
 	}
+	if page.Groups[0].Summary.AssetCount != 1 {
+		t.Fatalf("expected cash group asset count 1, got %d", page.Groups[0].Summary.AssetCount)
+	}
+	if page.Groups[1].Summary.AssetCount != 2 {
+		t.Fatalf("expected investment group asset count 2, got %d", page.Groups[1].Summary.AssetCount)
+	}
+	assertFloatEqual(t, 11000, page.Groups[0].Summary.TotalCurrent)
+	assertFloatEqual(t, 23000, page.Groups[1].Summary.TotalCurrent)
 
 	cashRow := page.Groups[0].Rows[0]
 	if cashRow.ProfitApplicable {

@@ -47,6 +47,7 @@
     state.currentView = "edit";
     state.deleteDialog = null;
     state.editError = "";
+    state.editNotice = "";
     state.snapshotAssetModal = null;
     state.editDraft = cloneValue(page);
     sortEditDraft(state.editDraft);
@@ -99,6 +100,7 @@
             </div>
           </div>
           ${renderRemovedRowsUndo(state.removedRows)}
+          ${state.editNotice ? `<p class="success-copy success-banner">${escapeHTML(state.editNotice)}</p>` : ""}
           ${state.editError ? `<p class="error-copy error-banner">${escapeHTML(state.editError)}</p>` : ""}
         </section>
         ${draft.Groups.map(renderEditGroup).join("")}
@@ -702,8 +704,8 @@
                 <th>Broker</th>
                 <th class="numeric">Bought Price</th>
                 <th class="numeric">Current Price</th>
-                <th class="numeric">Profit</th>
                 <th class="numeric">% Profit</th>
+                <th class="numeric">Profit</th>
                 <th>Notes</th>
                 <th class="numeric">Action</th>
               </tr>
@@ -761,8 +763,8 @@
             spellcheck="false"
           />
         </td>
-        <td id="profit-value-${row.AssetID}" class="numeric ${tone}">${row.IsCash ? '<span class="muted">N/A</span>' : formatTHB(profit)}</td>
         <td id="profit-percent-${row.AssetID}" class="numeric ${tone}">${row.IsCash ? '<span class="muted">N/A</span>' : formatPercent(profitPercent)}</td>
+        <td id="profit-value-${row.AssetID}" class="numeric ${tone}">${row.IsCash ? '<span class="muted">N/A</span>' : formatTHB(profit)}</td>
         <td>
           <input
             class="form-input form-input-table edit-remarks-input manual-field manual-field-locked"

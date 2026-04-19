@@ -31,6 +31,7 @@ type assetListRow struct {
 	AssetTypeName string  `db:"asset_type_name"`
 	Broker        string  `db:"broker"`
 	IsCash        bool    `db:"is_cash"`
+	IsLiability   bool    `db:"is_liability"`
 	IsActive      bool    `db:"is_active"`
 	Ordering      int     `db:"ordering"`
 	AutoIncrement float64 `db:"auto_increment"`
@@ -46,6 +47,7 @@ type assetMetaRow struct {
 	ID               int64        `db:"id"`
 	AssetTypeID      int64        `db:"asset_type_id"`
 	IsCash           bool         `db:"is_cash"`
+	IsLiability      bool         `db:"is_liability"`
 	DeletedAt        sql.NullTime `db:"deleted_at"`
 	AssetTypeDeleted sql.NullTime `db:"asset_type_deleted_at"`
 	AssetTypeActive  bool         `db:"asset_type_is_active"`
@@ -83,6 +85,7 @@ func (r *AssetManagementRepository) GetPage(ctx context.Context) (dto.AssetManag
 			at.name AS asset_type_name,
 			a.broker,
 			a.is_cash,
+			a.is_liability,
 			a.is_active,
 			a.ordering,
 			a.auto_increment
@@ -130,6 +133,7 @@ func (r *AssetManagementRepository) GetPage(ctx context.Context) (dto.AssetManag
 			AssetTypeName: row.AssetTypeName,
 			Broker:        row.Broker,
 			IsCash:        row.IsCash,
+			IsLiability:   row.IsLiability,
 			IsActive:      row.IsActive,
 			Ordering:      row.Ordering,
 			AutoIncrement: row.AutoIncrement,
@@ -222,10 +226,11 @@ func (r *AssetManagementRepository) CreateAsset(ctx context.Context, input dto.C
 			name,
 			broker,
 			is_cash,
+			is_liability,
 			is_active,
 			auto_increment
-		) VALUES (?, ?, ?, ?, ?, ?)
-	`, input.AssetTypeID, input.Name, input.Broker, input.IsCash, input.IsActive, autoIncrement)
+		) VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, input.AssetTypeID, input.Name, input.Broker, input.IsCash, input.IsLiability, input.IsActive, autoIncrement)
 	if err != nil {
 		return dto.AssetMutationResult{}, fmt.Errorf("insert asset: %w", err)
 	}
@@ -276,11 +281,12 @@ func (r *AssetManagementRepository) UpdateAsset(ctx context.Context, input dto.U
 		    name = ?,
 		    broker = ?,
 		    is_cash = ?,
+		    is_liability = ?,
 		    is_active = ?,
 		    auto_increment = ?
 		WHERE id = ?
 		  AND deleted_at IS NULL
-	`, input.AssetTypeID, input.Name, input.Broker, input.IsCash, input.IsActive, autoIncrement, input.ID)
+	`, input.AssetTypeID, input.Name, input.Broker, input.IsCash, input.IsLiability, input.IsActive, autoIncrement, input.ID)
 	if err != nil {
 		return dto.AssetMutationResult{}, fmt.Errorf("update asset: %w", err)
 	}
@@ -361,6 +367,7 @@ func (r *AssetManagementRepository) ReorderAssets(ctx context.Context, input dto
 			at.name AS asset_type_name,
 			a.broker,
 			a.is_cash,
+			a.is_liability,
 			a.is_active,
 			a.ordering,
 			a.auto_increment
@@ -537,6 +544,7 @@ func (r *AssetManagementRepository) loadAssetMeta(
 			a.id,
 			a.asset_type_id,
 			a.is_cash,
+			a.is_liability,
 			a.deleted_at,
 			at.deleted_at AS asset_type_deleted_at,
 			at.is_active AS asset_type_is_active

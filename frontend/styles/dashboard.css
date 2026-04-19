@@ -9,6 +9,22 @@
   min-width: 1180px;
 }
 
+.home-group-header-side {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.home-group-count {
+  color: #3c382f;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .summary-item {
   padding: 12px 14px;
   border-right: 1px solid #e8e2d9;
