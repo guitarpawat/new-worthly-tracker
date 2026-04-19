@@ -132,6 +132,7 @@ Main user flows already implemented:
 - Keep file scope tight
 - Avoid large abstractions for one-off UI behavior
 - Do not push directly to `master`; create a feature branch first unless the user explicitly asks for a direct push
+- Do not push to any remote unless the user explicitly permits it
 
 ## Validation Rules
 
