@@ -42,22 +42,11 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev pkg-config
       - name: Build application
         run: go run github.com/wailsapp/wails/v2/cmd/wails@v2.12.0 build ${{ matrix.build_args }}
-      - name: Archive build output (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          mkdir -p release
-          cd build
-          zip -r "../release/worthly-tracker-${{ matrix.slug }}.zip" bin
-      - name: Archive build output (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path release | Out-Null
-          Compress-Archive -Path build/bin/* -DestinationPath release/worthly-tracker-${{ matrix.slug }}.zip -Force
       - uses: actions/upload-artifact@v4
         with:
           name: worthly-tracker-${{ matrix.slug }}
-          path: release/*.zip
+          path: build/bin
+          if-no-files-found: error
 
   release:
     name: Publish GitHub Release
@@ -67,9 +56,12 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: release-artifacts
+      - name: Collect release files
+        run: |
+          find release-artifacts -maxdepth 3 -type f > release-files.txt
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: master-${{ github.run_number }}
-          name: master-${{ github.run_number }}
+          tag_name: v1.0.${{ github.run_number }}
+          name: v1.0.${{ github.run_number }}
           generate_release_notes: true
-          files: release-artifacts/**/*.zip
+          files_from_source_file: release-files.txt
