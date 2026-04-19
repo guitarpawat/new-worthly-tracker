@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"math"
-	"slices"
 	"time"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
@@ -98,9 +96,12 @@ func normalizeProgressFilter(availableDates []string, filter dto.ProgressFilter)
 func buildProgressAggregates(rows []dto.ProgressSnapshotItem) ([]dto.ProgressPoint, []dto.AllocationSnapshot) {
 	type aggregate struct {
 		point       dto.ProgressPoint
-		byAssetType map[string]float64
-		byAsset     map[string]float64
-		byCategory  map[string]float64
+		byAssetType []dto.AllocationSlice
+		byAsset     []dto.AllocationSlice
+		byCategory  []dto.AllocationSlice
+		typeIndex   map[string]int
+		assetIndex  map[string]int
+		categoryMap map[string]int
 	}
 
 	aggregates := make([]aggregate, 0, len(rows))
@@ -114,9 +115,9 @@ func buildProgressAggregates(rows []dto.ProgressSnapshotItem) ([]dto.ProgressPoi
 				point: dto.ProgressPoint{
 					SnapshotDate: row.SnapshotDate,
 				},
-				byAssetType: make(map[string]float64),
-				byAsset:     make(map[string]float64),
-				byCategory:  make(map[string]float64),
+				typeIndex:   make(map[string]int),
+				assetIndex:  make(map[string]int),
+				categoryMap: make(map[string]int),
 			})
 		}
 
@@ -135,15 +136,15 @@ func buildProgressAggregates(rows []dto.ProgressSnapshotItem) ([]dto.ProgressPoi
 		if assetTypeName == "" {
 			assetTypeName = "Uncategorized"
 		}
-		current.byAssetType[assetTypeName] += row.CurrentPrice
-		current.byAsset[row.AssetName] += row.CurrentPrice
+		accumulateAllocationSlice(&current.byAssetType, current.typeIndex, assetTypeName, row.CurrentPrice)
+		accumulateAllocationSlice(&current.byAsset, current.assetIndex, row.AssetName, row.CurrentPrice)
 		switch {
-		case row.CurrentPrice < 0:
-			current.byCategory["Liabilities"] += row.CurrentPrice
+		case row.IsLiability:
+			accumulateAllocationSlice(&current.byCategory, current.categoryMap, "Liabilities", row.CurrentPrice)
 		case row.IsCash:
-			current.byCategory["Cash"] += row.CurrentPrice
+			accumulateAllocationSlice(&current.byCategory, current.categoryMap, "Cash", row.CurrentPrice)
 		default:
-			current.byCategory["Non Cash Asset"] += row.CurrentPrice
+			accumulateAllocationSlice(&current.byCategory, current.categoryMap, "Non Cash Asset", row.CurrentPrice)
 		}
 	}
 
@@ -161,42 +162,48 @@ func buildProgressAggregates(rows []dto.ProgressSnapshotItem) ([]dto.ProgressPoi
 		trendPoints = append(trendPoints, current.point)
 		allocationSnapshots = append(allocationSnapshots, dto.AllocationSnapshot{
 			SnapshotDate: current.point.SnapshotDate,
-			ByAssetType:  mapToAllocationSlices(current.byAssetType),
-			ByAsset:      mapToAllocationSlices(current.byAsset),
-			ByCategory:   mapToAllocationSlices(current.byCategory),
+			ByAssetType:  current.byAssetType,
+			ByAsset:      current.byAsset,
+			ByCategory:   normalizeCategorySlices(current.byCategory),
 		})
 	}
 
 	return trendPoints, allocationSnapshots
 }
 
-func mapToAllocationSlices(values map[string]float64) []dto.AllocationSlice {
-	slicesOut := make([]dto.AllocationSlice, 0, len(values))
-	for name, value := range values {
-		slicesOut = append(slicesOut, dto.AllocationSlice{
-			Name:  name,
-			Value: value,
-		})
+func accumulateAllocationSlice(target *[]dto.AllocationSlice, indexMap map[string]int, name string, value float64) {
+	index, found := indexMap[name]
+	if !found {
+		index = len(*target)
+		indexMap[name] = index
+		*target = append(*target, dto.AllocationSlice{Name: name, Value: value})
+		return
+	}
+	(*target)[index].Value += value
+}
+
+func normalizeCategorySlices(rows []dto.AllocationSlice) []dto.AllocationSlice {
+	order := []string{"Cash", "Non Cash Asset", "Liabilities"}
+	indexMap := make(map[string]int, len(rows))
+	for index, row := range rows {
+		indexMap[row.Name] = index
 	}
 
-	slices.SortFunc(slicesOut, func(left dto.AllocationSlice, right dto.AllocationSlice) int {
-		leftAbs := math.Abs(left.Value)
-		rightAbs := math.Abs(right.Value)
-		switch {
-		case leftAbs > rightAbs:
-			return -1
-		case leftAbs < rightAbs:
-			return 1
-		case left.Name < right.Name:
-			return -1
-		case left.Name > right.Name:
-			return 1
-		default:
-			return 0
+	ordered := make([]dto.AllocationSlice, 0, len(rows))
+	for _, name := range order {
+		index, found := indexMap[name]
+		if !found {
+			continue
 		}
-	})
-
-	return slicesOut
+		ordered = append(ordered, rows[index])
+	}
+	for _, row := range rows {
+		if row.Name == "Cash" || row.Name == "Non Cash Asset" || row.Name == "Liabilities" {
+			continue
+		}
+		ordered = append(ordered, row)
+	}
+	return ordered
 }
 
 func buildProgressSummary(points []dto.ProgressPoint) dto.ProgressSummary {

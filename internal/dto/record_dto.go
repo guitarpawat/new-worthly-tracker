@@ -46,7 +46,13 @@ type SnapshotOption struct {
 
 type HomeAssetGroup struct {
 	AssetTypeName string
+	Summary       HomeAssetGroupSummary
 	Rows          []HomeAssetRow
+}
+
+type HomeAssetGroupSummary struct {
+	AssetCount   int
+	TotalCurrent float64
 }
 
 type HomeAssetRow struct {

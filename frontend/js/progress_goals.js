@@ -85,7 +85,7 @@
           <div>
             <h1>${renderAppTitle("Progress & Goals")}</h1>
           </div>
-          ${renderProgressHeroActions(page.Filter?.StartDate, page.Filter?.EndDate)}
+          ${renderProgressHeroActions(page.Filter?.StartDate, page.Filter?.EndDate, page.AvailableDates || [])}
         </section>
         ${renderProgressSubnav(view)}
         ${renderProgressContent(page, view, chartMode, allocationMode, allocationDate, projectionMonths)}
@@ -112,11 +112,22 @@
     `;
   }
 
-  function renderProgressHeroActions(startDate, endDate) {
+  function renderProgressHeroActions(startDate, endDate, availableDates) {
+    const quickRangeValue = resolveQuickRangeValue(startDate, endDate, availableDates);
     return `
       <div class="actions progress-hero-actions">
         ${renderDateFilterControl("Start Date", "progress-start-date", startDate)}
         ${renderDateFilterControl("End Date", "progress-end-date", endDate)}
+        <label class="field-inline progress-date-control progress-quick-range-control">
+          <span class="field-label">Quick Range</span>
+          ${controls.renderSelectControl({
+            id: "progress-quick-range",
+            value: quickRangeValue,
+            buttonClass: "snapshot-select progress-date-select progress-quick-range-select",
+            ariaLabel: "Quick range",
+            options: buildQuickRangeOptions(),
+          })}
+        </label>
       </div>
     `;
   }
@@ -180,18 +191,19 @@
 
   function renderSummaryPage(page, allocationMode, allocationDate) {
     const selectedDate = state.progressAllocationModal?.snapshotDate || "";
+    const rows = sortSummaryPoints(page.TrendPoints || []);
     return `
       <section class="panel table-panel">
         <div class="table-header">
           <h2>Summary Table</h2>
-          <span>${page.TrendPoints.length} snapshot(s)</span>
+          <span>${rows.length} snapshot(s)</span>
         </div>
         <p class="subtle progress-note progress-summary-hint">Click a snapshot row to open its allocation chart.</p>
         <div class="table-scroll">
           <table class="progress-table">
             <thead>
               <tr>
-                <th>Date</th>
+                <th><button id="progress-summary-date-sort" class="progress-sort-button" type="button">Date ${state.progressSummaryDateSort === "desc" ? "▼" : "▲"}</button></th>
                 <th class="numeric">Bought</th>
                 <th class="numeric">Net Worth</th>
                 <th class="numeric">Profit</th>
@@ -202,7 +214,7 @@
               </tr>
             </thead>
             <tbody>
-              ${page.TrendPoints.map((point) => renderProgressRow(point, selectedDate)).join("")}
+              ${rows.map((point) => renderProgressRow(point, selectedDate)).join("")}
             </tbody>
           </table>
         </div>
@@ -442,6 +454,19 @@
       input.addEventListener("change", async () => loadProgressPageWithSelectedFilter(app));
     }
 
+    const quickRangeInput = root.document.getElementById("progress-quick-range");
+    if (quickRangeInput) {
+      quickRangeInput.addEventListener("change", async () => {
+        const months = Number(quickRangeInput.value || 0);
+        if (!months) {
+          state.progressQuickRangeMonths = "";
+          return;
+        }
+        state.progressQuickRangeMonths = String(months);
+        await loadProgressPageWithQuickRange(app, months);
+      });
+    }
+
     for (const button of root.document.querySelectorAll("[data-progress-chart-mode]")) {
       button.addEventListener("click", () => {
         state.progressChartMode = button.dataset.progressChartMode;
@@ -474,6 +499,14 @@
           snapshotDate: state.progressAllocationDate,
           mode: state.progressAllocationMode || "asset_type",
         };
+        renderProgressPage(app);
+      });
+    }
+
+    const summarySortButton = root.document.getElementById("progress-summary-date-sort");
+    if (summarySortButton) {
+      summarySortButton.addEventListener("click", () => {
+        state.progressSummaryDateSort = state.progressSummaryDateSort === "desc" ? "asc" : "desc";
         renderProgressPage(app);
       });
     }
@@ -584,6 +617,30 @@
     }
   }
 
+  function buildQuickRangeOptions() {
+    return [{ value: "", label: "Custom" }, { value: "12", label: "Last 12 months" }, { value: "18", label: "Last 18 months" }, { value: "24", label: "Last 24 months" }, { value: "36", label: "Last 36 months" }];
+  }
+
+  function resolveQuickRangeValue(startDate, endDate, availableDates = []) {
+    if (!startDate || !endDate || !availableDates.length || availableDates[availableDates.length - 1] !== endDate) {
+      return "";
+    }
+    const endIndex = availableDates.lastIndexOf(endDate);
+    const startIndex = availableDates.indexOf(startDate);
+    if (endIndex < 0 || startIndex < 0 || startIndex > endIndex) {
+      return "";
+    }
+    const span = endIndex - startIndex + 1;
+    return ["12", "18", "24", "36"].includes(String(span)) ? String(span) : "";
+  }
+
+  function sortSummaryPoints(points) {
+    const sorted = [...(points || [])];
+    sorted.sort((left, right) => state.progressSummaryDateSort === "asc"
+      ? left.SnapshotDate.localeCompare(right.SnapshotDate)
+      : right.SnapshotDate.localeCompare(left.SnapshotDate));
+    return sorted;
+  }
   function renderProgressCharts(page, view, chartMode, allocationMode, allocationDate, projectionMonths) {
     if (!root.document) {
       return;
@@ -637,7 +694,6 @@
       TargetDate: form.targetDate || "",
     };
   }
-
   function closeGoalModal(app) {
     state.goalModal = null;
     renderProgressPage(app);
@@ -651,6 +707,20 @@
   async function loadProgressPageWithSelectedFilter(app) {
     const startDate = root.document.getElementById("progress-start-date")?.value || "";
     const endDate = root.document.getElementById("progress-end-date")?.value || "";
+    await runTransition(async () => {
+      state.progressQuickRangeMonths = "";
+      state.progressFilter = { StartDate: startDate, EndDate: endDate };
+      await app.loadProgressPage(state.progressFilter);
+    });
+  }
+  async function loadProgressPageWithQuickRange(app, months) {
+    const dates = state.progressPage?.AvailableDates || [];
+    if (!dates.length) {
+      return;
+    }
+    const endDate = dates[dates.length - 1];
+    const startIndex = Math.max(0, dates.length - Number(months));
+    const startDate = dates[startIndex];
     await runTransition(async () => {
       state.progressFilter = { StartDate: startDate, EndDate: endDate };
       await app.loadProgressPage(state.progressFilter);
@@ -667,7 +737,6 @@
         } else {
           await backend.CreateGoal(payload);
         }
-
         state.goalModal = null;
         await app.loadProgressPage(state.progressFilter || state.progressPage?.Filter || {});
       } catch (error) {
@@ -698,7 +767,6 @@
     }
     root.document.body.classList.toggle("overlay-open", Boolean(state.goalModal || state.progressAllocationModal));
   }
-
   function renderProjectionSelector(projectionMonths) {
     return `
       <label class="field-inline progress-projection-control">
@@ -716,7 +784,6 @@
       </label>
     `;
   }
-
   return {
     buildGoalModalForm,
     buildGoalPayload,

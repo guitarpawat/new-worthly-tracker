@@ -235,10 +235,11 @@ test("renderAllocationTotalRow matches allocation legend styling", () => {
 });
 
 test("renderProgressHeroActions shows date controls without apply button", () => {
-  const markup = renderProgressHeroActions("2026-01-01", "2026-12-31");
+  const markup = renderProgressHeroActions("2026-01-01", "2026-12-31", ["2026-01-01", "2026-12-31"]);
 
   assert.match(markup, /progress-start-date/);
   assert.match(markup, /progress-end-date/);
+  assert.match(markup, /progress-quick-range/);
   assert.doesNotMatch(markup, /progress-apply-filter/);
   assert.doesNotMatch(markup, />Apply</);
 });

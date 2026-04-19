@@ -21,6 +21,7 @@ type AssetRow struct {
 	AssetTypeName string
 	Broker        string
 	IsCash        bool
+	IsLiability   bool
 	IsActive      bool
 	Ordering      int
 	AutoIncrement float64
@@ -51,6 +52,7 @@ type CreateAssetInput struct {
 	AssetTypeID   int64
 	Broker        string
 	IsCash        bool
+	IsLiability   bool
 	IsActive      bool
 	AutoIncrement float64
 }
@@ -61,6 +63,7 @@ type UpdateAssetInput struct {
 	AssetTypeID   int64
 	Broker        string
 	IsCash        bool
+	IsLiability   bool
 	IsActive      bool
 	AutoIncrement float64
 }

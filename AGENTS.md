@@ -107,7 +107,9 @@ Main user flows already implemented:
 - `frontend/js/snapshot_form_logic.js`
   - snapshot form logic helpers and keyboard behavior
 - `frontend/js/asset_management.js`
-  - create/edit assets and asset types
+  - asset management page wiring
+- `frontend/js/asset_management_ui.js`
+  - asset management form/table rendering helpers
 - `frontend/js/asset_reorder.js`
   - reorder pages
 - `frontend/js/progress_chart_logic.js`
@@ -186,6 +188,16 @@ Important behavior:
 - empty `db.path` => in-memory SQLite
 - empty `log.path` => stdout only, no file output
 
+## Privacy and Output Hygiene
+
+- Do not generate files containing personal machine paths, OneDrive paths, JetBrains datasource paths, or real local usernames unless the user explicitly asks for them.
+- Do not write real financial data into fixtures, demo seeds, screenshots, docs, tests, or migration helper scripts.
+- For import or migration scripts, use:
+  - project-relative paths
+  - placeholders
+  - sanitized sample values
+- If inspecting the user DB is necessary, keep findings in chat or tests only. Do not commit their data back into the repo.
+
 ## Local Artifacts
 
 These are local runtime files. Do not treat them as project source:
@@ -230,3 +242,17 @@ Before finishing a substantial task:
 - check for dead files, dead imports, and stale docs
 - update `README.md` only for user-facing behavior
 - update `AGENTS.md` only for maintenance knowledge
+
+## Project Skills
+
+Project-local skills are intentionally trimmed to a small maintenance set. If a skill is missing, prefer normal repo exploration over re-adding a large generic skill bundle.
+
+Keep only clearly useful repo-local skills:
+
+- `wails`
+- `modern-javascript-patterns`
+- `golang-code-style`
+- `golang-database`
+- `golang-testing`
+- `golang-troubleshooting`
+- `golang-continuous-integration`

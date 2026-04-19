@@ -51,7 +51,8 @@ func (r *ProgressRepository) ListSnapshotItemsInRange(
 			COALESCE(at.name, '') AS asset_type_name,
 			ri.current_price,
 			ri.bought_price,
-			a.is_cash AS is_cash
+			a.is_cash AS is_cash,
+			a.is_liability AS is_liability
 		FROM record_snapshots rs
 		INNER JOIN record_items ri ON ri.snapshot_id = rs.id
 		INNER JOIN assets a ON a.id = ri.asset_id

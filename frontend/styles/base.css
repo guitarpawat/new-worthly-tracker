@@ -219,6 +219,19 @@ body.overlay-open .summary-strip::-webkit-scrollbar {
   color: #7d776d;
 }
 
+.success-copy {
+  color: #0f7a4d;
+}
+
+.success-banner {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #b8deca;
+  border-radius: 16px;
+  background: #edf9f2;
+  font-weight: 600;
+}
+
 .home-menu-item-danger {
   border-color: #e8c0c0;
   background: #fff4f4;

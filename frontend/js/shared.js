@@ -23,6 +23,14 @@
     assetForm: null,
     assetTypeError: "",
     assetError: "",
+    assetManagementNotice: "",
+    assetManagementFilters: {
+      assetTypeActive: "all",
+      assetActive: "all",
+      assetCash: "all",
+      assetLiability: "all",
+    },
+    editNotice: "",
     assetManagementModal: null,
     snapshotAssetModal: null,
     progressPage: null,
@@ -30,9 +38,11 @@
     progressView: "trend",
     progressChartMode: "net_worth",
     progressProjectionMonths: 6,
+    progressQuickRangeMonths: "",
     progressAllocationMode: "asset_type",
     progressAllocationDate: "",
     progressAllocationModal: null,
+    progressSummaryDateSort: "desc",
     goalModal: null,
   };
 

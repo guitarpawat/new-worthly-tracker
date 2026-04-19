@@ -93,6 +93,7 @@
           try {
             const backend = shared.resolveBackend();
             await backend.CreateAssetType(assetManagement.buildAssetTypeCreatePayload(modal.assetTypeForm));
+            state.editNotice = `Created asset type ${modal.assetTypeForm.name}.`;
             state.snapshotAssetModal = null;
             renderEditPage(app);
           } catch (error) {
@@ -139,6 +140,13 @@
       });
     }
 
+    const liabilityInput = root.document.getElementById("asset-is-liability-input");
+    if (liabilityInput) {
+      liabilityInput.addEventListener("change", (event) => {
+        modal.assetForm.isLiability = event.target.checked;
+      });
+    }
+
     const activeInput = root.document.getElementById("asset-is-active-input");
     if (activeInput) {
       activeInput.addEventListener("change", (event) => {
@@ -175,6 +183,7 @@
               addCreatedAssetToDraft(modal, result.ID);
               markEditDirty();
             }
+            state.editNotice = `Created asset ${modal.assetForm.name}.`;
             state.snapshotAssetModal = null;
             renderEditPage(app);
           } catch (error) {
