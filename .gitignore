@@ -157,6 +157,7 @@ worthly-tracker.db-wal
 
 # Local agent / IDE metadata
 .ai/
+.playwright-mcp/
 .idea/dataSources.xml
 .idea/dataSources.local.xml
 .idea/db-forest-config.xml
