@@ -119,8 +119,8 @@
               <col class="col-broker" />
               <col class="col-bought" />
               <col class="col-current" />
-              <col class="col-profit" />
               <col class="col-profit-percent" />
+              <col class="col-profit" />
               <col class="col-notes" />
             </colgroup>
             <thead>
@@ -129,8 +129,8 @@
                 <th>Broker</th>
                 <th class="numeric">Bought Price</th>
                 <th class="numeric">Current Price</th>
-                <th class="numeric">Profit</th>
                 <th class="numeric">% Profit</th>
+                <th class="numeric">Profit</th>
                 <th>Notes</th>
               </tr>
             </thead>
@@ -710,8 +710,8 @@
         <td>${escapeHTML(row.Broker || "-")}</td>
         <td class="numeric ${row.ProfitApplicable ? "" : "muted"}">${boughtValue}</td>
         <td class="numeric">${formatTHB(row.CurrentPrice)}</td>
-        <td class="numeric ${tone}">${profitValue}</td>
         <td class="numeric ${tone}">${percentValue}</td>
+        <td class="numeric ${tone}">${profitValue}</td>
         <td>${escapeHTML(row.Remarks || "-")}</td>
       </tr>
     `;

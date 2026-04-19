@@ -42,10 +42,26 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libsoup-3.0-dev pkg-config
       - name: Build application
         run: go run github.com/wailsapp/wails/v2/cmd/wails@v2.12.0 build ${{ matrix.build_args }}
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            binary="$(find build/bin -maxdepth 1 -type f ! -name '*.exe' | head -n 1)"
+            cp "$binary" "release/worthly-tracker-${{ matrix.slug }}"
+          elif [ "${{ runner.os }}" = "Windows" ]; then
+            binary="$(find build/bin -maxdepth 1 -type f -name '*.exe' | head -n 1)"
+            cp "$binary" "release/worthly-tracker-${{ matrix.slug }}.exe"
+          else
+            app_bundle="$(find build/bin -maxdepth 1 -type d -name '*.app' | head -n 1)"
+            ditto -c -k --keepParent "$app_bundle" "release/worthly-tracker-${{ matrix.slug }}.app.zip"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: worthly-tracker-${{ matrix.slug }}
-          path: build/bin
+          path: release/*
           if-no-files-found: error
 
   release:
@@ -55,13 +71,11 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          merge-multiple: true
           path: release-artifacts
-      - name: Collect release files
-        run: |
-          find release-artifacts -maxdepth 3 -type f > release-files.txt
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: v1.0.${{ github.run_number }}
           generate_release_notes: true
-          files_from_source_file: release-files.txt
+          files: release-artifacts/*
