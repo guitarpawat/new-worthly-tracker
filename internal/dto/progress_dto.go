@@ -42,6 +42,9 @@ type ProgressPoint struct {
 type ProjectionPoint struct {
 	SnapshotDate string
 	TotalCurrent float64
+	TotalCash    float64
+	TotalNonCash float64
+	Liabilities  float64
 }
 
 type ProgressSummary struct {

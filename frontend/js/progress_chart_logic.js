@@ -48,7 +48,7 @@
 
   function buildTrendChartConfig(page, chartMode, projectionMonths) {
     if (chartMode === "category_breakdown") {
-      return buildCategoryBreakdownTrendChartConfig(page);
+      return buildCategoryBreakdownTrendChartConfig(page, projectionMonths);
     }
 
     const visibleProjectionPoints = chartMode === "net_worth"
@@ -160,18 +160,24 @@
     };
   }
 
-  function buildCategoryBreakdownTrendChartConfig(page) {
+  function buildCategoryBreakdownTrendChartConfig(page, projectionMonths) {
     const labels = page.TrendPoints.map((point) => formatDateLabel(point.SnapshotDate));
+    const visibleProjectionPoints = sliceProjectionPoints(page.ProjectionPoints || [], projectionMonths);
+    const projectionLabelTail = visibleProjectionPoints.length > 1
+      ? visibleProjectionPoints.slice(1).map((point) => formatProjectionMonthLabel(point.SnapshotDate))
+      : [];
+    const allLabels = labels.concat(projectionLabelTail);
     const datasets = [
-      buildCategoryTrendDataset(page, "Cash", "#7b530c"),
-      buildCategoryTrendDataset(page, "Non Cash Asset", "#d0b16e"),
-      buildCategoryTrendDataset(page, "Liabilities", "#26231d"),
+      buildCategoryTrendDataset(page, "Cash", "#7b530c", allLabels.length),
+      buildCategoryTrendDataset(page, "Non Cash Asset", "#d0b16e", allLabels.length),
+      buildCategoryTrendDataset(page, "Liabilities", "#26231d", allLabels.length),
     ];
+    datasets.push(...buildCategoryProjectionDatasets(visibleProjectionPoints, page.TrendPoints.length, allLabels.length));
 
     return {
       type: "line",
       data: {
-        labels,
+        labels: allLabels,
         datasets,
       },
       options: {
@@ -223,11 +229,11 @@
     };
   }
 
-  function buildCategoryTrendDataset(page, categoryName, borderColor) {
-    const data = (page.TrendPoints || []).map((point) => resolveCategoryTrendValue(page, point.SnapshotDate, categoryName));
+  function buildCategoryTrendDataset(page, categoryName, borderColor, totalLabelCount) {
+    const values = (page.TrendPoints || []).map((point) => resolveCategoryTrendValue(page, point.SnapshotDate, categoryName));
     return {
       label: categoryName,
-      data,
+      data: padSeries(values, totalLabelCount),
       borderColor,
       backgroundColor: "transparent",
       borderWidth: 3,
@@ -239,6 +245,49 @@
     };
   }
 
+  function buildCategoryProjectionDatasets(projectionPoints, historicalPointCount, totalLabelCount) {
+    if (!projectionPoints.length) {
+      return [];
+    }
+
+    return [
+      buildCategoryProjectionDataset(projectionPoints, historicalPointCount, totalLabelCount, "Cash", "#7b530c"),
+      buildCategoryProjectionDataset(projectionPoints, historicalPointCount, totalLabelCount, "Non Cash Asset", "#d0b16e"),
+      buildCategoryProjectionDataset(projectionPoints, historicalPointCount, totalLabelCount, "Liabilities", "#26231d"),
+    ];
+  }
+
+  function buildCategoryProjectionDataset(
+    projectionPoints,
+    historicalPointCount,
+    totalLabelCount,
+    categoryName,
+    borderColor,
+  ) {
+    const values = new Array(totalLabelCount).fill(null);
+    for (const [index, point] of projectionPoints.entries()) {
+      const targetIndex = Math.max(historicalPointCount - 1, 0) + index;
+      if (targetIndex >= totalLabelCount) {
+        continue;
+      }
+      values[targetIndex] = resolveCategoryProjectionValue(point, categoryName);
+    }
+
+    return {
+      label: `${categoryName} Projection`,
+      data: values,
+      borderColor,
+      backgroundColor: "transparent",
+      borderDash: [8, 6],
+      borderWidth: 3,
+      pointRadius: 2,
+      pointHoverRadius: 4,
+      pointHitRadius: 22,
+      fill: false,
+      tension: 0.18,
+    };
+  }
+
   function resolveCategoryTrendValue(page, snapshotDate, categoryName) {
     const snapshot = (page.AllocationSnapshots || []).find((item) => item.SnapshotDate === snapshotDate);
     if (!snapshot) {
@@ -246,6 +295,16 @@
     }
     const row = (snapshot.ByCategory || []).find((item) => item.Name === categoryName);
     return Number(row?.Value || 0);
+  }
+
+  function resolveCategoryProjectionValue(point, categoryName) {
+    if (categoryName === "Cash") {
+      return Number(point.TotalCash || 0);
+    }
+    if (categoryName === "Liabilities") {
+      return Number(point.Liabilities || 0);
+    }
+    return Number(point.TotalNonCash || 0);
   }
 
   function buildAllocationChartConfig(page, allocationDate, allocationMode) {

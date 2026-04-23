@@ -173,7 +173,7 @@
               >${escapeHTML(mode.label)}</button>
             `).join("")}
           </div>
-          ${chartMode === "net_worth" ? renderProjectionSelector(projectionMonths) : ""}
+          ${shouldShowProjectionSelector(chartMode) ? renderProjectionSelector(projectionMonths) : ""}
         </div>
         <div class="progress-chart-shell">
           <canvas id="progress-trend-chart" class="progress-chart-canvas" aria-label="${escapeHTML(resolveChartModeLabel(chartMode))}"></canvas>
@@ -830,6 +830,10 @@
       </label>
     `;
   }
+
+  function shouldShowProjectionSelector(chartMode) {
+    return chartMode === "net_worth" || chartMode === "category_breakdown";
+  }
   return {
     buildGoalModalForm,
     buildGoalPayload,
@@ -845,5 +849,6 @@
     resolveAllocationTotalValue,
     resolveHomeSnapshotOffset,
     resolveQuickRangeValue,
+    shouldShowProjectionSelector,
   };
 }));
