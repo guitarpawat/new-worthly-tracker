@@ -158,12 +158,6 @@
   gap: 10px;
 }
 
-.progress-allocation-chart-grid {
-  display: grid;
-  gap: 18px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .dialog-card.progress-allocation-dialog {
   width: min(1560px, calc(100vw - 56px));
   max-width: calc(100vw - 56px);
@@ -177,8 +171,15 @@
   gap: 8px;
 }
 
-.progress-allocation-close-button {
+.progress-allocation-actions {
   margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.progress-allocation-close-button {
   flex: 0 0 auto;
 }
 
@@ -345,6 +346,12 @@
     flex-wrap: wrap;
   }
 
+  .progress-allocation-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   .progress-allocation-controls .progress-chip-group {
     flex-wrap: wrap;
   }
@@ -352,7 +359,6 @@
   .progress-allocation-content {
     grid-template-columns: 1fr;
   }
-
   .progress-allocation-dialog .progress-pie-shell,
   .progress-allocation-dialog .progress-chart-canvas {
     height: 360px;

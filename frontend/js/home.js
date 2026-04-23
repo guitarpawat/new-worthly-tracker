@@ -25,6 +25,15 @@
     snapshotCount,
     state,
   } = shared;
+  let homeAllocationChartInstance = null;
+
+  function resolveProgressChartLogic() {
+    const progressChartLogic = root.WorthlyProgressChartLogic || (typeof require !== "undefined" ? require("./progress_chart_logic.js") : null);
+    if (!progressChartLogic) {
+      throw new Error("Progress chart helpers are not available");
+    }
+    return progressChartLogic;
+  }
 
   function syncHomeOverlayState() {
     if (!root.document?.body) {
@@ -32,13 +41,15 @@
     }
 
     const homeMenu = root.document.getElementById("home-menu");
-    const hasOverlay = Boolean(state.deleteDialog) || Boolean(homeMenu?.open);
+    const hasOverlay = Boolean(state.deleteDialog) || Boolean(state.homeAllocationModal) || Boolean(homeMenu?.open);
     root.document.body.classList.toggle("overlay-open", hasOverlay);
   }
 
   function renderHomePage(page, app) {
     const appRoot = root.document.getElementById("app");
+    destroyHomeCharts();
     if (!page || !page.HasSnapshot) {
+      state.homeAllocationModal = null;
       appRoot.innerHTML = `
         <main class="app-layout">
           <section class="hero">
@@ -143,7 +154,7 @@
     `).join("");
 
     appRoot.innerHTML = `
-      <main class="app-layout ${state.deleteDialog ? "app-overlay-open" : ""}">
+      <main class="app-layout ${state.deleteDialog || state.homeAllocationModal ? "app-overlay-open" : ""}">
         <section class="hero">
           <div>
             <h1>${renderAppTitle()}</h1>
@@ -155,6 +166,7 @@
             <button id="latest-button" class="button" type="button" ${state.offset === 0 ? "disabled" : ""}>Latest</button>
             <button id="new-button" class="button button-primary" type="button">New</button>
             <button id="edit-button" class="button button-secondary" type="button">Edit</button>
+            <button id="home-allocation-button" class="button" type="button">Chart</button>
             ${renderHomeOverflowMenu(page)}
           </div>
         </section>
@@ -166,9 +178,11 @@
         ${groups}
       </main>
       ${renderDeleteSnapshotDialog(page)}
+      ${renderHomeAllocationModal(page)}
     `;
 
     bindHomeNavigation(page, app);
+    renderHomeCharts(page);
     syncHomeOverlayState();
   }
 
@@ -245,6 +259,50 @@
           <div class="dialog-actions">
             <button id="delete-dialog-cancel" class="button" type="button">Cancel</button>
             <button id="delete-dialog-confirm" class="button button-danger" type="button">Delete</button>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderHomeAllocationModal(page) {
+    if (!state.homeAllocationModal || !page?.HasSnapshot) {
+      return "";
+    }
+
+    const { ALLOCATION_MODES, buildAllocationRows } = resolveProgressChartLogic();
+    const allocationDate = normalizeHomeSnapshotDate(page.SnapshotDate);
+    const allocationPage = buildHomeAllocationPage(page);
+    const mode = state.homeAllocationModal.mode || state.progressAllocationMode || "asset_type";
+    const allocationRows = buildAllocationRows(allocationPage, allocationDate, mode);
+
+    return `
+      <div class="dialog-backdrop" data-home-allocation-close="backdrop">
+        <section class="panel dialog-card progress-allocation-dialog" role="dialog" aria-modal="true">
+          <div class="table-header">
+            <h2>Allocation</h2>
+            <span>${escapeHTML(formatDateLabel(page.SnapshotDate))}</span>
+          </div>
+          <div class="progress-allocation-controls">
+            <div class="progress-chip-group">
+              ${ALLOCATION_MODES.map((item) => `
+                <button
+                  class="button progress-chip ${mode === item.id ? "progress-chip-active" : ""}"
+                  type="button"
+                  data-home-allocation-mode="${item.id}"
+                >${escapeHTML(item.label)}</button>
+              `).join("")}
+            </div>
+            <button id="home-allocation-close" class="button progress-allocation-close-button" type="button">Close</button>
+          </div>
+          <div class="progress-allocation-content">
+            <div class="progress-chart-shell progress-pie-shell">
+              <canvas id="home-allocation-chart" class="progress-chart-canvas" aria-label="Home allocation chart"></canvas>
+            </div>
+            <aside class="progress-allocation-sidebar">
+              ${renderAllocationLegend(allocationRows, mode)}
+              ${renderAllocationTotalRow(page.Summary?.TotalCurrent || 0)}
+            </aside>
           </div>
         </section>
       </div>
@@ -329,6 +387,16 @@
       });
     }
 
+    const allocationButton = root.document.getElementById("home-allocation-button");
+    if (allocationButton) {
+      allocationButton.addEventListener("click", () => {
+        state.homeAllocationModal = {
+          mode: state.progressAllocationMode || "asset_type",
+        };
+        renderHomePage(page, app);
+      });
+    }
+
     const homeMenu = root.document.getElementById("home-menu");
     for (const button of root.document.querySelectorAll("[data-menu-action]")) {
       button.addEventListener("click", async (event) => {
@@ -387,6 +455,7 @@
 
     bindSnapshotSelector(page, app);
     bindDeleteSnapshotDialog(page, app);
+    bindHomeAllocationModal(page, app);
   }
 
   function closeHomeOverflowMenu() {
@@ -422,6 +491,15 @@
     renderHomePage(state.currentPage, app);
   }
 
+  function closeHomeAllocationModal(app) {
+    state.homeAllocationModal = null;
+    if (!state.currentPage) {
+      syncHomeOverlayState();
+      return;
+    }
+    renderHomePage(state.currentPage, app);
+  }
+
   function bindDeleteSnapshotDialog(page, app) {
     if (!state.deleteDialog) {
       return;
@@ -448,6 +526,35 @@
           return;
         }
         closeDeleteSnapshotDialog(app);
+      });
+    }
+  }
+
+  function bindHomeAllocationModal(page, app) {
+    if (!state.homeAllocationModal) {
+      return;
+    }
+
+    for (const button of root.document.querySelectorAll("[data-home-allocation-mode]")) {
+      button.addEventListener("click", () => {
+        state.progressAllocationMode = button.dataset.homeAllocationMode;
+        state.homeAllocationModal.mode = state.progressAllocationMode;
+        renderHomePage(page, app);
+      });
+    }
+
+    const closeButton = root.document.getElementById("home-allocation-close");
+    if (closeButton) {
+      closeButton.addEventListener("click", () => closeHomeAllocationModal(app));
+      closeButton.focus();
+    }
+
+    for (const element of root.document.querySelectorAll("[data-home-allocation-close]")) {
+      element.addEventListener("click", (event) => {
+        if (event.target !== event.currentTarget) {
+          return;
+        }
+        closeHomeAllocationModal(app);
       });
     }
   }
@@ -496,6 +603,15 @@
   }
 
   function handleHomeKeydown(event, app) {
+    if (state.homeAllocationModal) {
+      if (!isGeneralTypingTarget(event.target) && event.key === "Escape") {
+        event.preventDefault();
+        closeHomeAllocationModal(app);
+        return true;
+      }
+      return false;
+    }
+
     if (state.deleteDialog) {
       const dialogAction = resolveDeleteDialogShortcutAction({
         key: event.key,
@@ -622,6 +738,155 @@
     return !clickedInsideMenu;
   }
 
+  function renderHomeCharts(page) {
+    if (!state.homeAllocationModal || !root.document) {
+      return;
+    }
+
+    const { buildAllocationChartConfig } = resolveProgressChartLogic();
+    const allocationPage = buildHomeAllocationPage(page);
+    const allocationDate = normalizeHomeSnapshotDate(page.SnapshotDate);
+    const mode = state.homeAllocationModal.mode || state.progressAllocationMode || "asset_type";
+
+    const allocationCanvas = root.document.getElementById("home-allocation-chart");
+    if (allocationCanvas) {
+      homeAllocationChartInstance = renderChart(
+        allocationCanvas,
+        buildAllocationChartConfig(allocationPage, allocationDate, mode),
+      );
+    }
+
+  }
+
+  function renderChart(canvas, config) {
+    const Chart = root.Chart;
+    if (!canvas || !Chart) {
+      return null;
+    }
+    return new Chart(canvas, config);
+  }
+
+  function destroyHomeCharts() {
+    if (homeAllocationChartInstance && typeof homeAllocationChartInstance.destroy === "function") {
+      homeAllocationChartInstance.destroy();
+    }
+    homeAllocationChartInstance = null;
+  }
+
+  function buildHomeAllocationPage(page) {
+    return {
+      AllocationSnapshots: [buildHomeAllocationSnapshot(page)],
+    };
+  }
+
+  function buildHomeAllocationSnapshot(page) {
+    const byAssetType = [];
+    const byAsset = [];
+    const categoryTotals = {
+      cash: 0,
+      nonCash: 0,
+      liabilities: 0,
+    };
+    const categorySeen = {
+      cash: false,
+      nonCash: false,
+      liabilities: false,
+    };
+
+    for (const group of page.Groups || []) {
+      let groupTotal = 0;
+      for (const row of group.Rows || []) {
+        const currentPrice = Number(row.CurrentPrice || 0);
+        groupTotal += currentPrice;
+        byAsset.push({
+          Name: row.AssetName,
+          Value: currentPrice,
+        });
+
+        if (row.IsLiability) {
+          categoryTotals.liabilities += currentPrice;
+          categorySeen.liabilities = true;
+        } else if (row.IsCash) {
+          categoryTotals.cash += currentPrice;
+          categorySeen.cash = true;
+        } else {
+          categoryTotals.nonCash += currentPrice;
+          categorySeen.nonCash = true;
+        }
+      }
+
+      byAssetType.push({
+        Name: group.AssetTypeName,
+        Value: groupTotal,
+      });
+    }
+
+    const byCategory = [
+      categorySeen.nonCash ? { Name: "Non Cash Asset", Value: categoryTotals.nonCash } : null,
+      categorySeen.cash ? { Name: "Cash", Value: categoryTotals.cash } : null,
+      categorySeen.liabilities ? { Name: "Liabilities", Value: categoryTotals.liabilities } : null,
+    ].filter(Boolean);
+
+    return {
+      SnapshotDate: normalizeHomeSnapshotDate(page.SnapshotDate),
+      ByAssetType: byAssetType,
+      ByAsset: byAsset,
+      ByCategory: byCategory,
+    };
+  }
+
+  function normalizeHomeSnapshotDate(snapshotDate) {
+    return String(snapshotDate || "").slice(0, 10);
+  }
+
+  function renderAllocationLegend(rows, mode) {
+    if (!rows.length) {
+      return '<p class="subtle">No allocation rows for the selected snapshot.</p>';
+    }
+
+    const { PROGRESS_CHART_COLORS, resolveCategoryChartColor } = resolveProgressChartLogic();
+    const total = rows.reduce((sum, row) => sum + Number(row.value || 0), 0);
+
+    return `
+      <div class="progress-allocation-legend">
+        <article class="progress-allocation-legend-row progress-allocation-legend-header">
+          <span></span>
+          <span class="progress-allocation-name">Name</span>
+          <span class="progress-allocation-percent">%</span>
+          <span class="progress-allocation-value">Value</span>
+        </article>
+        ${rows.map((row, index) => `
+          <article class="progress-allocation-legend-row">
+            <span class="progress-allocation-swatch" style="background:${mode === "category" ? resolveCategoryChartColor(row.name) : PROGRESS_CHART_COLORS[index % PROGRESS_CHART_COLORS.length]};"></span>
+            <span class="progress-allocation-name">${escapeHTML(row.name)}</span>
+            <span class="progress-allocation-percent ${row.value >= 0 ? "positive" : "negative"}">${escapeHTML(formatAllocationPercent(row.value, total))}</span>
+            <span class="progress-allocation-value ${row.value >= 0 ? "positive" : "negative"}">${escapeHTML(formatTHB(row.value))}</span>
+          </article>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderAllocationTotalRow(totalValue) {
+    return `
+      <div class="progress-allocation-legend progress-allocation-total-list">
+        <article class="progress-allocation-legend-row progress-allocation-total-row">
+          <span class="progress-allocation-swatch progress-allocation-total-swatch"></span>
+          <span class="progress-allocation-name">Total Value</span>
+          <span class="progress-allocation-percent"></span>
+          <span class="progress-allocation-value">${escapeHTML(formatTHB(totalValue))}</span>
+        </article>
+      </div>
+    `;
+  }
+
+  function formatAllocationPercent(value, total) {
+    if (total === 0) {
+      return "0.00%";
+    }
+    return `${((Number(value || 0) / total) * 100).toFixed(2)}%`;
+  }
+
   function buildMetrics(page) {
     const comparison = page.Comparison || null;
     return [
@@ -718,9 +983,11 @@
   }
 
   return {
+    buildHomeAllocationSnapshot,
     buildDeleteSnapshotDialogModel,
     buildHomeOverflowActions,
     handleHomeKeydown,
+    renderHomeAllocationModal,
     renderHomePage,
     resolveDeleteDialogShortcutAction,
     resolveHomeShortcutAction,

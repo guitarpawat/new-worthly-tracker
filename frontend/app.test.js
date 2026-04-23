@@ -13,6 +13,7 @@ const {
   buildEmptyAssetTypeForm,
   buildCreateSnapshotInput,
   buildDeleteSnapshotDialogModel,
+  buildHomeAllocationSnapshot,
   buildHomeOverflowActions,
   buildSaveSnapshotInput,
   deactivateManualField,
@@ -33,6 +34,7 @@ const {
   buildGoalPayload,
   formatMonthYearLabel,
   renderDateControl,
+  renderHomeAllocationModal,
   renderSelectControl,
   handleAssetManagementKeydown,
   shouldCloseAssetManagementModalOnEscape,
@@ -256,6 +258,85 @@ test("buildHomeOverflowActions keeps future pages in menu and moves delete there
   assert.equal(actions[2].disabled, false);
   assert.equal(actions[2].label, "Delete Snapshot");
   assert.equal(actions[2].note, "12 Apr 2026");
+});
+
+test("buildHomeAllocationSnapshot groups asset types, assets, and categories", () => {
+  const snapshot = buildHomeAllocationSnapshot({
+    SnapshotDate: "2026-04-12T00:00:00Z",
+    Groups: [
+      {
+        AssetTypeName: "Cash",
+        Rows: [
+          { AssetName: "Wallet", CurrentPrice: 5000, IsCash: true, IsLiability: false },
+        ],
+      },
+      {
+        AssetTypeName: "Investment",
+        Rows: [
+          { AssetName: "ETF", CurrentPrice: 12000, IsCash: false, IsLiability: false },
+        ],
+      },
+      {
+        AssetTypeName: "Debt",
+        Rows: [
+          { AssetName: "Credit Card", CurrentPrice: -2500, IsCash: true, IsLiability: true },
+        ],
+      },
+    ],
+  });
+
+  assert.equal(snapshot.SnapshotDate, "2026-04-12");
+  assert.deepEqual(snapshot.ByAssetType, [
+    { Name: "Cash", Value: 5000 },
+    { Name: "Investment", Value: 12000 },
+    { Name: "Debt", Value: -2500 },
+  ]);
+  assert.deepEqual(snapshot.ByAsset, [
+    { Name: "Wallet", Value: 5000 },
+    { Name: "ETF", Value: 12000 },
+    { Name: "Credit Card", Value: -2500 },
+  ]);
+  assert.deepEqual(snapshot.ByCategory, [
+    { Name: "Non Cash Asset", Value: 12000 },
+    { Name: "Cash", Value: 5000 },
+    { Name: "Liabilities", Value: -2500 },
+  ]);
+});
+
+test("renderHomeAllocationModal renders a single chart for the current snapshot", () => {
+  state.homeAllocationModal = { mode: "asset_type" };
+
+  const markup = renderHomeAllocationModal({
+    HasSnapshot: true,
+    SnapshotDate: "2026-04-12T00:00:00Z",
+    Summary: { TotalCurrent: 14500 },
+    Groups: [
+      {
+        AssetTypeName: "Cash",
+        Rows: [
+          { AssetName: "Wallet", CurrentPrice: 5000, IsCash: true, IsLiability: false },
+        ],
+      },
+      {
+        AssetTypeName: "Investment",
+        Rows: [
+          { AssetName: "ETF", CurrentPrice: 12000, IsCash: false, IsLiability: false },
+        ],
+      },
+      {
+        AssetTypeName: "Debt",
+        Rows: [
+          { AssetName: "Credit Card", CurrentPrice: -2500, IsCash: true, IsLiability: true },
+        ],
+      },
+    ],
+  });
+
+  assert.match(markup, /home-allocation-chart/);
+  assert.match(markup, /THB 14,500.00/);
+  assert.doesNotMatch(markup, /home-category-allocation-chart/);
+
+  state.homeAllocationModal = null;
 });
 
 test("resolveAssetManagementView prefers explicit child page selection", () => {

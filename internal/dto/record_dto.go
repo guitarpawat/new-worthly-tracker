@@ -15,6 +15,7 @@ type SnapshotItem struct {
 	AssetOrdering     int
 	Broker            string
 	IsCash            bool
+	IsLiability       bool
 	BoughtPrice       float64
 	CurrentPrice      float64
 	Remarks           string
@@ -59,6 +60,8 @@ type HomeAssetRow struct {
 	AssetID          int64
 	AssetName        string
 	Broker           string
+	IsCash           bool
+	IsLiability      bool
 	BoughtPrice      float64
 	CurrentPrice     float64
 	Profit           float64

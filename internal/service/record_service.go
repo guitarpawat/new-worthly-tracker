@@ -232,6 +232,8 @@ func buildHomeGroups(items []dto.SnapshotItem) []dto.HomeAssetGroup {
 			AssetID:          item.AssetID,
 			AssetName:        item.AssetName,
 			Broker:           item.Broker,
+			IsCash:           item.IsCash,
+			IsLiability:      item.IsLiability,
 			BoughtPrice:      item.BoughtPrice,
 			CurrentPrice:     item.CurrentPrice,
 			Profit:           calculateProfit(item),

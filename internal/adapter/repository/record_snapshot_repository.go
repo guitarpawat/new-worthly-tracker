@@ -31,6 +31,7 @@ type snapshotItemRow struct {
 	AssetOrdering     int            `db:"asset_ordering"`
 	Broker            string         `db:"broker"`
 	AssetIsCash       bool           `db:"asset_is_cash"`
+	AssetIsLiability  bool           `db:"asset_is_liability"`
 	AssetIsActive     bool           `db:"asset_is_active"`
 	BoughtPrice       float64        `db:"bought_price"`
 	CurrentPrice      float64        `db:"current_price"`
@@ -120,6 +121,7 @@ func (r *RecordSnapshotRepository) GetSnapshotByOffset(
 			a.ordering AS asset_ordering,
 			a.broker AS broker,
 			a.is_cash AS asset_is_cash,
+			a.is_liability AS asset_is_liability,
 			ri.bought_price AS bought_price,
 			ri.current_price AS current_price,
 			ri.remarks AS remarks
@@ -148,6 +150,7 @@ func (r *RecordSnapshotRepository) GetSnapshotByOffset(
 			AssetOrdering:     row.AssetOrdering,
 			Broker:            row.Broker,
 			IsCash:            row.AssetIsCash,
+			IsLiability:       row.AssetIsLiability,
 			BoughtPrice:       row.BoughtPrice,
 			CurrentPrice:      row.CurrentPrice,
 			Remarks:           row.Remarks,

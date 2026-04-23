@@ -37,6 +37,9 @@ func TestRecordSnapshotRepository_GetSnapshotByOffsetReturnsLatestSnapshotWithOr
 	if snapshot.Items[0].AssetTypeName != "Cash" || snapshot.Items[0].AssetName != "Wallet" {
 		t.Fatalf("expected cash item first, got %s/%s", snapshot.Items[0].AssetTypeName, snapshot.Items[0].AssetName)
 	}
+	if snapshot.Items[0].IsLiability {
+		t.Fatal("expected wallet not to be liability")
+	}
 	if snapshot.Items[1].AssetTypeName != "Investment" || snapshot.Items[1].AssetName != "SET50 ETF" {
 		t.Fatalf("expected investment item second, got %s/%s", snapshot.Items[1].AssetTypeName, snapshot.Items[1].AssetName)
 	}
@@ -50,6 +53,42 @@ func TestRecordSnapshotRepository_GetSnapshotByOffsetReturnsLatestSnapshotWithOr
 	}
 	if got := olderSnapshot.RecordDate.Format("2006-01-02"); got != "2026-03-12" {
 		t.Fatalf("expected older snapshot date 2026-03-12, got %s", got)
+	}
+}
+
+func TestRecordSnapshotRepository_GetSnapshotByOffsetPreservesLiabilityFlags(t *testing.T) {
+	t.Parallel()
+
+	database := openTestDB(t)
+	statements := []string{
+		`INSERT INTO asset_types (id, name, ordering) VALUES (1, 'Debt', 1)`,
+		`INSERT INTO assets (id, asset_type_id, name, broker, is_cash, is_liability, is_active, auto_increment, ordering) VALUES
+			(1, 1, 'Credit Card', 'KBank', TRUE, TRUE, TRUE, 0, 1)`,
+		`INSERT INTO record_snapshots (id, record_date) VALUES (1, '2026-04-12')`,
+		`INSERT INTO record_items (id, snapshot_id, asset_id, bought_price, current_price, remarks) VALUES
+			(1, 1, 1, 0, -4200, 'Card balance')`,
+	}
+
+	for _, statement := range statements {
+		if _, err := database.Exec(statement); err != nil {
+			t.Fatalf("exec statement %q: %v", statement, err)
+		}
+	}
+
+	repo := NewRecordSnapshotRepository(database)
+
+	snapshot, err := repo.GetSnapshotByOffset(context.Background(), 0)
+	if err != nil {
+		t.Fatalf("GetSnapshotByOffset returned error: %v", err)
+	}
+	if snapshot == nil || len(snapshot.Items) != 1 {
+		t.Fatalf("expected one liability snapshot item, got %+v", snapshot)
+	}
+	if !snapshot.Items[0].IsCash {
+		t.Fatal("expected liability item to preserve cash flag")
+	}
+	if !snapshot.Items[0].IsLiability {
+		t.Fatal("expected liability item to preserve liability flag")
 	}
 }
 

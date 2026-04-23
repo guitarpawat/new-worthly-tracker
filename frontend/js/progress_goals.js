@@ -251,7 +251,10 @@
                 >${escapeHTML(mode.label)}</button>
               `).join("")}
             </div>
-            <button id="progress-allocation-close" class="button progress-allocation-close-button" type="button">Close</button>
+            <div class="progress-allocation-actions">
+              <button id="progress-allocation-home" class="button" type="button">See Details</button>
+              <button id="progress-allocation-close" class="button progress-allocation-close-button" type="button">Close</button>
+            </div>
           </div>
           <div class="progress-allocation-content">
             <div class="progress-chart-shell progress-pie-shell">
@@ -457,13 +460,13 @@
     const quickRangeInput = root.document.getElementById("progress-quick-range");
     if (quickRangeInput) {
       quickRangeInput.addEventListener("change", async () => {
-        const months = Number(quickRangeInput.value || 0);
-        if (!months) {
+        const quickRangeValue = quickRangeInput.value || "";
+        if (!quickRangeValue) {
           state.progressQuickRangeMonths = "";
           return;
         }
-        state.progressQuickRangeMonths = String(months);
-        await loadProgressPageWithQuickRange(app, months);
+        state.progressQuickRangeMonths = quickRangeValue;
+        await loadProgressPageWithQuickRange(app, quickRangeValue);
       });
     }
 
@@ -523,6 +526,11 @@
     const closeAllocationButton = root.document.getElementById("progress-allocation-close");
     if (closeAllocationButton) {
       closeAllocationButton.addEventListener("click", () => closeAllocationModal(app));
+    }
+
+    const homeDetailsButton = root.document.getElementById("progress-allocation-home");
+    if (homeDetailsButton) {
+      homeDetailsButton.addEventListener("click", async () => openAllocationSnapshotOnHome(app));
     }
 
     const addGoalButton = root.document.getElementById("progress-add-goal");
@@ -618,7 +626,14 @@
   }
 
   function buildQuickRangeOptions() {
-    return [{ value: "", label: "Custom" }, { value: "12", label: "Last 12 months" }, { value: "18", label: "Last 18 months" }, { value: "24", label: "Last 24 months" }, { value: "36", label: "Last 36 months" }];
+    return [
+      { value: "", label: "Custom" },
+      { value: "all", label: "All records" },
+      { value: "12", label: "Last 12 months" },
+      { value: "18", label: "Last 18 months" },
+      { value: "24", label: "Last 24 months" },
+      { value: "36", label: "Last 36 months" },
+    ];
   }
 
   function resolveQuickRangeValue(startDate, endDate, availableDates = []) {
@@ -629,6 +644,9 @@
     const startIndex = availableDates.indexOf(startDate);
     if (endIndex < 0 || startIndex < 0 || startIndex > endIndex) {
       return "";
+    }
+    if (startIndex === 0) {
+      return "all";
     }
     const span = endIndex - startIndex + 1;
     return ["12", "18", "24", "36"].includes(String(span)) ? String(span) : "";
@@ -641,6 +659,15 @@
       : right.SnapshotDate.localeCompare(left.SnapshotDate));
     return sorted;
   }
+
+  function resolveHomeSnapshotOffset(availableDates, snapshotDate) {
+    const index = (availableDates || []).indexOf(snapshotDate);
+    if (index < 0) {
+      return -1;
+    }
+    return availableDates.length - index - 1;
+  }
+
   function renderProgressCharts(page, view, chartMode, allocationMode, allocationDate, projectionMonths) {
     if (!root.document) {
       return;
@@ -704,6 +731,24 @@
     renderProgressPage(app);
   }
 
+  async function openAllocationSnapshotOnHome(app) {
+    const snapshotDate = state.progressAllocationModal?.snapshotDate || "";
+    const offset = resolveHomeSnapshotOffset(state.progressPage?.AvailableDates || [], snapshotDate);
+    if (offset < 0) {
+      rootErrorBanner("Unable to open the selected snapshot on the home page.");
+      return;
+    }
+
+    state.progressAllocationModal = null;
+    state.homeAllocationModal = null;
+    renderProgressPage(app);
+
+    await runTransition(async () => {
+      state.offset = offset;
+      await app.loadHomePage();
+    });
+  }
+
   async function loadProgressPageWithSelectedFilter(app) {
     const startDate = root.document.getElementById("progress-start-date")?.value || "";
     const endDate = root.document.getElementById("progress-end-date")?.value || "";
@@ -713,14 +758,15 @@
       await app.loadProgressPage(state.progressFilter);
     });
   }
-  async function loadProgressPageWithQuickRange(app, months) {
+  async function loadProgressPageWithQuickRange(app, quickRangeValue) {
     const dates = state.progressPage?.AvailableDates || [];
     if (!dates.length) {
       return;
     }
     const endDate = dates[dates.length - 1];
-    const startIndex = Math.max(0, dates.length - Number(months));
-    const startDate = dates[startIndex];
+    const startDate = quickRangeValue === "all"
+      ? dates[0]
+      : dates[Math.max(0, dates.length - Number(quickRangeValue))];
     await runTransition(async () => {
       state.progressFilter = { StartDate: startDate, EndDate: endDate };
       await app.loadProgressPage(state.progressFilter);
@@ -790,11 +836,14 @@
     closeAllocationModal,
     formatAllocationPercent,
     loadProgressPageWithSelectedFilter,
+    loadProgressPageWithQuickRange,
     renderAllocationModal,
     renderAllocationTotalRow,
     renderProgressHeroActions,
     renderProgressPage,
     renderProjectionSelector,
     resolveAllocationTotalValue,
+    resolveHomeSnapshotOffset,
+    resolveQuickRangeValue,
   };
 }));

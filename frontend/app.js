@@ -38,9 +38,12 @@ function appContext() {
   };
 }
 
-async function loadHomePage() {
+async function loadHomePage(options = {}) {
   state.currentView = "home";
   state.deleteDialog = null;
+  if (!options.preserveAllocationModal) {
+    state.homeAllocationModal = null;
+  }
   const root = document.getElementById("app");
   root.innerHTML = '<div class="loading-state">Loading latest snapshot...</div>';
 

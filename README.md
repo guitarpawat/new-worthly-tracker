@@ -12,7 +12,7 @@ It is built with Go, Wails, and SQLite, with a spreadsheet-style light UI aimed 
 - Add, edit, delete, and reorder assets and asset types
 - Use custom in-app date pickers and dropdowns with keyboard support
 - Track progress over time with trend charts, summary tables, allocation popups, and goals
-- Jump to the latest 12/18/24/36-month progress range quickly
+- Jump to the latest 12/18/24/36-month progress range or all records quickly
 - Keep historical snapshots intact with soft delete
 
 ## Main Concepts
