@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"slices"
 	"time"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
@@ -382,7 +383,7 @@ func buildHybridProjectionModel(
 		latestNonCash:             latest.nonCash,
 		latestLiabilities:         latest.liabilities,
 		cashDeltaPerMonth:         averageFloat(cashDeltas),
-		liabilityDeltaPerMonth:    averageFloat(liabilityDeltas),
+		liabilityDeltaPerMonth:    medianFloat(liabilityDeltas),
 		nonCashGrowthRatePerMonth: averageFloat(nonCashGrowthRates),
 	}, true
 }
@@ -435,6 +436,22 @@ func averageFloat(values []float64) float64 {
 	return total / float64(len(values))
 }
 
+func medianFloat(values []float64) float64 {
+	if len(values) == 0 {
+		return 0
+	}
+
+	sorted := append([]float64{}, values...)
+	slices.Sort(sorted)
+
+	middle := len(sorted) / 2
+	if len(sorted)%2 == 1 {
+		return sorted[middle]
+	}
+
+	return (sorted[middle-1] + sorted[middle]) / 2
+}
+
 func (m hybridProjectionModel) projectNetWorth(monthsFromLatest float64) float64 {
 	return m.projectCash(monthsFromLatest) +
 		m.projectNonCash(monthsFromLatest) +
@@ -455,7 +472,12 @@ func (m hybridProjectionModel) projectNonCash(monthsFromLatest float64) float64 
 }
 
 func (m hybridProjectionModel) projectLiabilities(monthsFromLatest float64) float64 {
-	return m.latestLiabilities + (m.liabilityDeltaPerMonth * monthsFromLatest)
+	projectedLiabilities := m.latestLiabilities + (m.liabilityDeltaPerMonth * monthsFromLatest)
+	if projectedLiabilities > 0 {
+		return 0
+	}
+
+	return projectedLiabilities
 }
 
 func (m hybridProjectionModel) hasPositiveNetWorthTrend(horizonMonths int) bool {

@@ -169,6 +169,64 @@ func TestProgressService_GetPageMarksGoalsAsReachedOrNeedsPositiveTrend(t *testi
 	}
 }
 
+func TestBuildProjectionPointsUsesMedianLiabilityDeltaAndClampsToZero(t *testing.T) {
+	t.Parallel()
+
+	projectionPoints := buildProjectionPoints([]dto.AllocationSnapshot{
+		{
+			SnapshotDate: "2026-01-12",
+			ByCategory: []dto.AllocationSlice{
+				{Name: "Cash", Value: 1000},
+				{Name: "Non Cash Asset", Value: 10000},
+				{Name: "Liabilities", Value: -3000},
+			},
+		},
+		{
+			SnapshotDate: "2026-02-12",
+			ByCategory: []dto.AllocationSlice{
+				{Name: "Cash", Value: 1100},
+				{Name: "Non Cash Asset", Value: 10200},
+				{Name: "Liabilities", Value: -2800},
+			},
+		},
+		{
+			SnapshotDate: "2026-03-12",
+			ByCategory: []dto.AllocationSlice{
+				{Name: "Cash", Value: 1200},
+				{Name: "Non Cash Asset", Value: 10400},
+				{Name: "Liabilities", Value: -10800},
+			},
+		},
+		{
+			SnapshotDate: "2026-04-12",
+			ByCategory: []dto.AllocationSlice{
+				{Name: "Cash", Value: 1300},
+				{Name: "Non Cash Asset", Value: 10600},
+				{Name: "Liabilities", Value: -400},
+			},
+		},
+		{
+			SnapshotDate: "2026-05-12",
+			ByCategory: []dto.AllocationSlice{
+				{Name: "Cash", Value: 1400},
+				{Name: "Non Cash Asset", Value: 10800},
+				{Name: "Liabilities", Value: -200},
+			},
+		},
+	})
+
+	if len(projectionPoints) < 4 {
+		t.Fatalf("expected projection points, got %d", len(projectionPoints))
+	}
+
+	assertProgressFloatEqual(t, -200, projectionPoints[0].Liabilities)
+	if projectionPoints[1].Liabilities > 0 || projectionPoints[1].Liabilities < -1 {
+		t.Fatalf("expected first projected liability to be nearly paid off, got %f", projectionPoints[1].Liabilities)
+	}
+	assertProgressFloatEqual(t, 0, projectionPoints[2].Liabilities)
+	assertProgressFloatEqual(t, 0, projectionPoints[3].Liabilities)
+}
+
 func assertProgressFloatEqual(t *testing.T, want float64, got float64) {
 	t.Helper()
 	if want != got {
