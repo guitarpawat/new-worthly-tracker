@@ -20,6 +20,7 @@ const {
   resolveHomeSnapshotOffset,
   resolveProgressView,
   resolveQuickRangeValue,
+  shouldShowProjectionSelector,
   state,
 } = require("./app.js");
 
@@ -61,7 +62,7 @@ test("buildTrendChartConfig keeps projection only for total net worth mode", () 
   }), "Projection: THB 12,000.00");
 });
 
-test("buildTrendChartConfig builds category breakdown series without projection", () => {
+test("buildTrendChartConfig builds category breakdown series with projected trend lines", () => {
   const config = buildTrendChartConfig({
     TrendPoints: [
       { SnapshotDate: "2026-01-12" },
@@ -86,28 +87,37 @@ test("buildTrendChartConfig builds category breakdown series without projection"
       },
     ],
     ProjectionPoints: [
-      { SnapshotDate: "2026-03-12", TotalCurrent: 20000 },
+      { SnapshotDate: "2026-02-12", TotalCurrent: 12800, TotalCash: 4500, TotalNonCash: 9500, Liabilities: -1200 },
+      { SnapshotDate: "2026-03-12", TotalCurrent: 13750, TotalCash: 4800, TotalNonCash: 10150, Liabilities: -1200 },
     ],
   }, "category_breakdown", 6);
 
   assert.equal(config.type, "line");
-  assert.equal(config.data.datasets.length, 3);
+  assert.equal(config.data.datasets.length, 6);
+  assert.deepEqual(config.data.labels, ["12 Jan 2026", "12 Feb 2026", "Mar 2026"]);
   assert.deepEqual(config.data.datasets.map((dataset) => dataset.label), [
     "Cash",
     "Non Cash Asset",
     "Liabilities",
+    "Cash Projection",
+    "Non Cash Asset Projection",
+    "Liabilities Projection",
   ]);
   assert.equal(config.data.datasets[0].borderColor, "#7b530c");
   assert.equal(config.data.datasets[1].borderColor, "#d0b16e");
   assert.equal(config.data.datasets[2].borderColor, "#26231d");
-  assert.deepEqual(config.data.datasets[0].data, [4000, 4500]);
-  assert.deepEqual(config.data.datasets[1].data, [9000, 9500]);
-  assert.deepEqual(config.data.datasets[2].data, [-1500, -1200]);
+  assert.deepEqual(config.data.datasets[0].data, [4000, 4500, null]);
+  assert.deepEqual(config.data.datasets[1].data, [9000, 9500, null]);
+  assert.deepEqual(config.data.datasets[2].data, [-1500, -1200, null]);
+  assert.deepEqual(config.data.datasets[3].data, [null, 4500, 4800]);
+  assert.deepEqual(config.data.datasets[4].data, [null, 9500, 10150]);
+  assert.deepEqual(config.data.datasets[5].data, [null, -1200, -1200]);
+  assert.deepEqual(config.data.datasets[3].borderDash, [8, 6]);
   assert.equal(config.options.scales.y.ticks.callback(12000), "12,000.00");
   assert.equal(config.options.plugins.tooltip.callbacks.label({
-    dataset: { label: "Cash" },
-    parsed: { y: 4500 },
-  }), "Cash: THB 4,500.00");
+    dataset: { label: "Cash Projection" },
+    parsed: { y: 4800 },
+  }), "Cash Projection: THB 4,800.00");
 });
 
 test("renderProjectionSelector includes all supported projection month options", () => {
@@ -120,6 +130,12 @@ test("renderProjectionSelector includes all supported projection month options",
   assert.match(markup, /data-value="18"/);
   assert.match(markup, /data-value="24"/);
   assert.match(markup, /data-value="36"/);
+});
+
+test("shouldShowProjectionSelector supports both projected trend modes", () => {
+  assert.equal(shouldShowProjectionSelector("net_worth"), true);
+  assert.equal(shouldShowProjectionSelector("category_breakdown"), true);
+  assert.equal(shouldShowProjectionSelector("profit_rate"), false);
 });
 
 test("buildAllocationChartConfig builds a pie chart from allocation rows", () => {

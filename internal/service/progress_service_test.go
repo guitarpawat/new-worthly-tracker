@@ -72,7 +72,7 @@ func TestProgressService_GetPageBuildsTrendSummaryProjectionAllocationAndGoalEst
 	}, goalReaderStub{
 		goals: []dto.GoalRow{
 			{ID: 1, Name: "First Million", TargetAmount: 20000},
-			{ID: 2, Name: "Trip Fund", TargetAmount: 10000, TargetDate: "2026-12-31"},
+			{ID: 2, Name: "Trip Fund", TargetAmount: 15000, TargetDate: "2026-04-30"},
 		},
 	})
 
@@ -95,8 +95,20 @@ func TestProgressService_GetPageBuildsTrendSummaryProjectionAllocationAndGoalEst
 	assertProgressFloatInDelta(t, 0.4300, page.Summary.ProfitRate)
 	assertProgressFloatInDelta(t, 0.1258741258, page.Summary.CashRatio)
 
-	if len(page.ProjectionPoints) < 2 {
+	if len(page.ProjectionPoints) < 3 {
 		t.Fatalf("expected projection points, got %d", len(page.ProjectionPoints))
+	}
+	assertProgressFloatEqual(t, 2600, page.ProjectionPoints[0].TotalCash)
+	assertProgressFloatEqual(t, 12500, page.ProjectionPoints[0].TotalNonCash)
+	assertProgressFloatEqual(t, -800, page.ProjectionPoints[0].Liabilities)
+	firstProjectionGain := page.ProjectionPoints[1].TotalCurrent - page.ProjectionPoints[0].TotalCurrent
+	secondProjectionGain := page.ProjectionPoints[2].TotalCurrent - page.ProjectionPoints[1].TotalCurrent
+	if secondProjectionGain <= firstProjectionGain {
+		t.Fatalf(
+			"expected compounded projection gains, got first=%f second=%f",
+			firstProjectionGain,
+			secondProjectionGain,
+		)
 	}
 	if len(page.AllocationSnapshots) != 3 {
 		t.Fatalf("expected 3 allocation snapshots, got %d", len(page.AllocationSnapshots))
@@ -110,8 +122,14 @@ func TestProgressService_GetPageBuildsTrendSummaryProjectionAllocationAndGoalEst
 	if len(page.GoalEstimates) != 2 {
 		t.Fatalf("expected 2 goal estimates, got %d", len(page.GoalEstimates))
 	}
-	if page.GoalEstimates[0].Status != "Projected" && page.GoalEstimates[0].Status != "On track" {
+	if page.GoalEstimates[0].Status != "Projected" {
 		t.Fatalf("expected projected status, got %+v", page.GoalEstimates[0])
+	}
+	if page.GoalEstimates[1].Status != "On track" {
+		t.Fatalf("expected on track status, got %+v", page.GoalEstimates[1])
+	}
+	if page.GoalEstimates[1].EstimatedDate == "" || page.GoalEstimates[1].EstimatedDate >= "2026-04-12" {
+		t.Fatalf("expected interpolated goal date before next month, got %+v", page.GoalEstimates[1])
 	}
 }
 
