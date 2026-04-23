@@ -130,6 +130,12 @@ func TestRecordService_BuildHomePageCalculatesGroupedSummaryAndProfitRules(t *te
 	if cashRow.ProfitApplicable {
 		t.Fatal("expected cash row to disable profit")
 	}
+	if !cashRow.IsCash {
+		t.Fatal("expected cash row to preserve cash flag")
+	}
+	if cashRow.IsLiability {
+		t.Fatal("expected cash row not to be liability")
+	}
 	if cashRow.Profit != 0 {
 		t.Fatalf("expected zero cash profit, got %f", cashRow.Profit)
 	}
@@ -140,6 +146,9 @@ func TestRecordService_BuildHomePageCalculatesGroupedSummaryAndProfitRules(t *te
 	investmentRow := page.Groups[1].Rows[0]
 	if !investmentRow.ProfitApplicable {
 		t.Fatal("expected investment row to calculate profit")
+	}
+	if investmentRow.IsCash {
+		t.Fatal("expected investment row not to be cash")
 	}
 	if investmentRow.Profit != 5000 {
 		t.Fatalf("expected profit 5000, got %f", investmentRow.Profit)
@@ -157,6 +166,45 @@ func TestRecordService_BuildHomePageCalculatesGroupedSummaryAndProfitRules(t *te
 	assertFloatInDelta(t, 0.3235294117, page.Summary.CashRatio)
 	if page.Comparison != nil {
 		t.Fatal("expected no comparison for first snapshot")
+	}
+}
+
+func TestRecordService_BuildHomePagePreservesLiabilityFlagsOnRows(t *testing.T) {
+	t.Parallel()
+
+	service := RecordService{}
+	current := &dto.Snapshot{
+		RecordDate: time.Date(2026, time.April, 12, 0, 0, 0, 0, time.UTC),
+		Items: []dto.SnapshotItem{
+			{
+				AssetID:           1,
+				AssetName:         "Credit Card",
+				AssetTypeName:     "Debt",
+				AssetTypeOrdering: 1,
+				AssetOrdering:     1,
+				Broker:            "KBank",
+				IsCash:            true,
+				IsLiability:       true,
+				CurrentPrice:      -2500,
+			},
+		},
+	}
+
+	page := service.BuildHomePage(current, nil)
+
+	if len(page.Groups) != 1 || len(page.Groups[0].Rows) != 1 {
+		t.Fatalf("expected a single liability row, got %+v", page.Groups)
+	}
+
+	row := page.Groups[0].Rows[0]
+	if !row.IsCash {
+		t.Fatal("expected liability row to preserve cash flag")
+	}
+	if !row.IsLiability {
+		t.Fatal("expected liability row to preserve liability flag")
+	}
+	if row.ProfitApplicable {
+		t.Fatal("expected liability row to disable profit math")
 	}
 }
 

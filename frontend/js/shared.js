@@ -33,6 +33,7 @@
     editNotice: "",
     assetManagementModal: null,
     snapshotAssetModal: null,
+    homeAllocationModal: null,
     progressPage: null,
     progressFilter: null,
     progressView: "trend",
