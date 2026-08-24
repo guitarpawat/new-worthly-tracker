@@ -107,7 +107,7 @@ func TestAssetManagementRepository_CreateAndUpdateAsset(t *testing.T) {
 		Broker:        "KKP",
 		IsCash:        false,
 		IsActive:      true,
-		AutoIncrement: 2500,
+		AutoIncrement: dec(2500),
 	})
 	if err != nil {
 		t.Fatalf("CreateAsset returned error: %v", err)
@@ -120,7 +120,7 @@ func TestAssetManagementRepository_CreateAndUpdateAsset(t *testing.T) {
 		Broker:        "SCB",
 		IsCash:        true,
 		IsActive:      false,
-		AutoIncrement: 9999,
+		AutoIncrement: dec(9999),
 	})
 	if err != nil {
 		t.Fatalf("UpdateAsset returned error: %v", err)
@@ -147,8 +147,8 @@ func TestAssetManagementRepository_CreateAndUpdateAsset(t *testing.T) {
 			if item.IsActive {
 				t.Fatal("expected updated asset to be inactive")
 			}
-			if item.AutoIncrement != 0 {
-				t.Fatalf("expected cash auto increment forced to 0, got %f", item.AutoIncrement)
+			if !item.AutoIncrement.IsZero() {
+				t.Fatalf("expected cash auto increment forced to 0, got %s", item.AutoIncrement)
 			}
 		}
 	}
@@ -178,7 +178,7 @@ func TestAssetManagementRepository_CreateAssetRejectsInactiveAssetType(t *testin
 		Broker:        "KKP",
 		IsCash:        false,
 		IsActive:      true,
-		AutoIncrement: 100,
+		AutoIncrement: dec(100),
 	})
 	if !errors.Is(err, recorderr.ErrAssetTypeInactive) {
 		t.Fatalf("expected inactive asset type error, got %v", err)
@@ -234,7 +234,7 @@ func TestAssetManagementRepository_CreateAssetRejectsDuplicateNameInsideSameType
 		Broker:        "SCB",
 		IsCash:        true,
 		IsActive:      true,
-		AutoIncrement: 0,
+		AutoIncrement: dec(0),
 	})
 	if !errors.Is(err, recorderr.ErrAssetNameExists) {
 		t.Fatalf("expected duplicate asset name error, got %v", err)
@@ -256,7 +256,7 @@ func TestAssetManagementRepository_UpdateAssetRejectsDuplicateNameInsideSameType
 		Broker:        "IBKR",
 		IsCash:        false,
 		IsActive:      true,
-		AutoIncrement: 100,
+		AutoIncrement: dec(100),
 	})
 	if !errors.Is(err, recorderr.ErrAssetNameExists) {
 		t.Fatalf("expected duplicate asset name error, got %v", err)

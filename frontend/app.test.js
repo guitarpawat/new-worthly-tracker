@@ -65,6 +65,7 @@ const {
 test("formatTHB uses parentheses for negative values", () => {
   assert.equal(formatTHB(-11800), "(THB 11,800.00)");
   assert.equal(formatTHB(11800), "THB 11,800.00");
+  assert.equal(formatTHB("11800.25"), "THB 11,800.25");
 });
 
 test("formatDateLabel matches home page date format", () => {
@@ -135,6 +136,7 @@ test("isValidPartialDecimal accepts only partial decimal states used by edit inp
 test("formatEditableNumber always keeps two decimal places", () => {
   assert.equal(formatEditableNumber(10), "10.00");
   assert.equal(formatEditableNumber(-5.2), "-5.20");
+  assert.equal(formatEditableNumber("12.34"), "12.34");
 });
 
 test("buildSaveSnapshotInput forces cash bought price to zero", () => {
@@ -760,14 +762,14 @@ test("shouldCloseSnapshotAssetModalOnEscape closes only snapshot popup escape", 
   }), false);
 });
 
-test("buildGoalPayload trims the name and parses amount", () => {
+test("buildGoalPayload trims the name and preserves the decimal amount", () => {
   assert.deepEqual(buildGoalPayload({
     name: "  FIRE Number  ",
-    targetAmount: "1500000.50",
+    targetAmount: "9007199254740993.25",
     targetDate: "2028-12-31",
   }), {
     Name: "FIRE Number",
-    TargetAmount: 1500000.5,
+    TargetAmount: "9007199254740993.25",
     TargetDate: "2028-12-31",
   });
 });

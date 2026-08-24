@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/shopspring/decimal"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
 	"github.com/guitarpawat/worthly-tracker/internal/recorderr"
@@ -25,16 +26,16 @@ type assetTypeListRow struct {
 }
 
 type assetListRow struct {
-	ID            int64   `db:"id"`
-	Name          string  `db:"name"`
-	AssetTypeID   int64   `db:"asset_type_id"`
-	AssetTypeName string  `db:"asset_type_name"`
-	Broker        string  `db:"broker"`
-	IsCash        bool    `db:"is_cash"`
-	IsLiability   bool    `db:"is_liability"`
-	IsActive      bool    `db:"is_active"`
-	Ordering      int     `db:"ordering"`
-	AutoIncrement float64 `db:"auto_increment"`
+	ID            int64           `db:"id"`
+	Name          string          `db:"name"`
+	AssetTypeID   int64           `db:"asset_type_id"`
+	AssetTypeName string          `db:"asset_type_name"`
+	Broker        string          `db:"broker"`
+	IsCash        bool            `db:"is_cash"`
+	IsLiability   bool            `db:"is_liability"`
+	IsActive      bool            `db:"is_active"`
+	Ordering      int             `db:"ordering"`
+	AutoIncrement decimal.Decimal `db:"auto_increment"`
 }
 
 type assetTypeMetaRow struct {
@@ -217,7 +218,7 @@ func (r *AssetManagementRepository) CreateAsset(ctx context.Context, input dto.C
 
 	autoIncrement := input.AutoIncrement
 	if input.IsCash {
-		autoIncrement = 0
+		autoIncrement = decimal.Zero
 	}
 
 	result, err := r.db.ExecContext(ctx, `
@@ -272,7 +273,7 @@ func (r *AssetManagementRepository) UpdateAsset(ctx context.Context, input dto.U
 
 	autoIncrement := input.AutoIncrement
 	if input.IsCash {
-		autoIncrement = 0
+		autoIncrement = decimal.Zero
 	}
 
 	result, err := r.db.ExecContext(ctx, `

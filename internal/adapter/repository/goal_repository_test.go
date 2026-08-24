@@ -17,7 +17,7 @@ func TestGoalRepository_CreateListUpdateDeleteGoal(t *testing.T) {
 
 	createResult, err := repo.CreateGoal(context.Background(), dto.CreateGoalInput{
 		Name:         "Emergency Fund",
-		TargetAmount: 500000,
+		TargetAmount: dec(500000.25),
 		TargetDate:   "2027-12-31",
 	})
 	if err != nil {
@@ -34,11 +34,14 @@ func TestGoalRepository_CreateListUpdateDeleteGoal(t *testing.T) {
 	if goals[0].ID != createResult.ID || goals[0].Name != "Emergency Fund" {
 		t.Fatalf("unexpected goal row: %+v", goals[0])
 	}
+	if !goals[0].TargetAmount.Equal(dec(500000.25)) {
+		t.Fatalf("expected exact target amount 500000.25, got %s", goals[0].TargetAmount)
+	}
 
 	updated, err := repo.UpdateGoal(context.Background(), dto.UpdateGoalInput{
 		ID:           createResult.ID,
 		Name:         "Coast FIRE",
-		TargetAmount: 750000,
+		TargetAmount: dec(750000.75),
 		TargetDate:   "",
 	})
 	if err != nil {
@@ -57,6 +60,9 @@ func TestGoalRepository_CreateListUpdateDeleteGoal(t *testing.T) {
 	}
 	if goals[0].Name != "Coast FIRE" || goals[0].TargetDate != "" {
 		t.Fatalf("unexpected updated goal: %+v", goals[0])
+	}
+	if !goals[0].TargetAmount.Equal(dec(750000.75)) {
+		t.Fatalf("expected exact updated target amount 750000.75, got %s", goals[0].TargetAmount)
 	}
 
 	if err := repo.DeleteGoal(context.Background(), dto.DeleteGoalInput{ID: createResult.ID}); err != nil {
@@ -81,7 +87,7 @@ func TestGoalRepository_UpdateGoalReturnsNotFoundForDeletedGoal(t *testing.T) {
 	_, err := repo.UpdateGoal(context.Background(), dto.UpdateGoalInput{
 		ID:           999,
 		Name:         "Missing",
-		TargetAmount: 1000,
+		TargetAmount: dec(1000),
 	})
 	if !errors.Is(err, recorderr.ErrGoalNotFound) {
 		t.Fatalf("expected ErrGoalNotFound, got %v", err)

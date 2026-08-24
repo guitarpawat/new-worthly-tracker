@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/shopspring/decimal"
+
 type AssetManagementPage struct {
 	AssetTypes       []AssetTypeRow
 	Assets           []AssetRow
@@ -24,7 +26,7 @@ type AssetRow struct {
 	IsLiability   bool
 	IsActive      bool
 	Ordering      int
-	AutoIncrement float64
+	AutoIncrement decimal.Decimal `ts_type:"string"`
 }
 
 type AssetTypeOption struct {
@@ -54,7 +56,7 @@ type CreateAssetInput struct {
 	IsCash        bool
 	IsLiability   bool
 	IsActive      bool
-	AutoIncrement float64
+	AutoIncrement decimal.Decimal `ts_type:"string"`
 }
 
 type UpdateAssetInput struct {
@@ -65,7 +67,7 @@ type UpdateAssetInput struct {
 	IsCash        bool
 	IsLiability   bool
 	IsActive      bool
-	AutoIncrement float64
+	AutoIncrement decimal.Decimal `ts_type:"string"`
 }
 
 type AssetMutationResult struct {

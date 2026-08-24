@@ -27,7 +27,7 @@ func TestAssetValidator_ValidateCreateAssetInputRejectsNegativeAutoIncrement(t *
 	err := validator.ValidateCreateAssetInput(dto.CreateAssetInput{
 		Name:          "ETF",
 		AssetTypeID:   1,
-		AutoIncrement: -1,
+		AutoIncrement: dec(-1),
 	})
 	if err == nil {
 		t.Fatal("expected validation error")
@@ -46,7 +46,7 @@ func TestAssetValidator_ValidateUpdateAssetInputAcceptsValidPayload(t *testing.T
 		Broker:        "KKP",
 		IsCash:        false,
 		IsActive:      true,
-		AutoIncrement: 6500,
+		AutoIncrement: dec(6500),
 	})
 	if err != nil {
 		t.Fatalf("ValidateUpdateAssetInput returned error: %v", err)

@@ -15,7 +15,7 @@ func TestRecordValidator_ValidateSaveSnapshotInputAcceptsValidPayload(t *testing
 		SnapshotID:   1,
 		SnapshotDate: "2026-04-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 1234.50, CurrentPrice: -55.25, Remarks: "valid"},
+			{AssetID: 1, BoughtPrice: dec(1234.50), CurrentPrice: dec(-55.25), Remarks: "valid"},
 		},
 	})
 	if err != nil {
@@ -32,7 +32,7 @@ func TestRecordValidator_ValidateSaveSnapshotInputRejectsMoreThanTwoDecimalPlace
 		SnapshotID:   1,
 		SnapshotDate: "2026-04-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 123.456, CurrentPrice: 1},
+			{AssetID: 1, BoughtPrice: dec(123.456), CurrentPrice: dec(1)},
 		},
 	})
 	if err == nil {
@@ -49,8 +49,8 @@ func TestRecordValidator_ValidateSaveSnapshotInputRejectsDuplicateAssetIDs(t *te
 		SnapshotID:   1,
 		SnapshotDate: "2026-04-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 1, CurrentPrice: 1},
-			{AssetID: 1, BoughtPrice: 2, CurrentPrice: 2},
+			{AssetID: 1, BoughtPrice: dec(1), CurrentPrice: dec(1)},
+			{AssetID: 1, BoughtPrice: dec(2), CurrentPrice: dec(2)},
 		},
 	})
 	if err == nil {
@@ -66,7 +66,7 @@ func TestRecordValidator_ValidateCreateSnapshotInputAcceptsValidPayload(t *testi
 	err := validator.ValidateCreateSnapshotInput(dto.CreateSnapshotInput{
 		SnapshotDate: "2026-04-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 1234.50, CurrentPrice: -55.25, Remarks: "valid"},
+			{AssetID: 1, BoughtPrice: dec(1234.50), CurrentPrice: dec(-55.25), Remarks: "valid"},
 		},
 	})
 	if err != nil {

@@ -159,11 +159,6 @@
     return !target.readOnly;
   }
 
-  function parseNumberInput(value) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
   function isAllowedControlKey(event) {
     return [
       "Backspace",
@@ -206,10 +201,10 @@
 
   function parseEditableNumber(value) {
     if (value === "" || value === "-" || value === "." || value === "-.") {
-      return 0;
+      return "0";
     }
 
-    return parseNumberInput(value);
+    return Number.isFinite(Number(value)) ? String(value) : "0";
   }
 
   function formatEditableNumber(value) {
@@ -323,7 +318,6 @@
     isValidPartialDecimal,
     logHomeAction,
     parseEditableNumber,
-    parseNumberInput,
     previewNumericValue,
     renderAppTitle,
     renderErrorState,

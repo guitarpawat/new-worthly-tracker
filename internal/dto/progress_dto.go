@@ -1,20 +1,22 @@
 package dto
 
+import "github.com/shopspring/decimal"
+
 type ProgressFilter struct {
 	StartDate string
 	EndDate   string
 }
 
 type ProgressSnapshotItem struct {
-	SnapshotID    int64   `db:"snapshot_id"`
-	AssetID       int64   `db:"asset_id"`
-	SnapshotDate  string  `db:"snapshot_date"`
-	AssetName     string  `db:"asset_name"`
-	AssetTypeName string  `db:"asset_type_name"`
-	CurrentPrice  float64 `db:"current_price"`
-	BoughtPrice   float64 `db:"bought_price"`
-	IsCash        bool    `db:"is_cash"`
-	IsLiability   bool    `db:"is_liability"`
+	SnapshotID    int64           `db:"snapshot_id"`
+	AssetID       int64           `db:"asset_id"`
+	SnapshotDate  string          `db:"snapshot_date"`
+	AssetName     string          `db:"asset_name"`
+	AssetTypeName string          `db:"asset_type_name"`
+	CurrentPrice  decimal.Decimal `db:"current_price" ts_type:"string"`
+	BoughtPrice   decimal.Decimal `db:"bought_price" ts_type:"string"`
+	IsCash        bool            `db:"is_cash"`
+	IsLiability   bool            `db:"is_liability"`
 }
 
 type ProgressPage struct {
@@ -31,28 +33,28 @@ type ProgressPage struct {
 
 type ProgressPoint struct {
 	SnapshotDate string
-	TotalBought  float64
-	TotalCurrent float64
-	TotalProfit  float64
-	ProfitRate   float64
-	TotalCash    float64
-	TotalNonCash float64
-	CashRatio    float64
+	TotalBought  decimal.Decimal `ts_type:"string"`
+	TotalCurrent decimal.Decimal `ts_type:"string"`
+	TotalProfit  decimal.Decimal `ts_type:"string"`
+	ProfitRate   decimal.Decimal `ts_type:"string"`
+	TotalCash    decimal.Decimal `ts_type:"string"`
+	TotalNonCash decimal.Decimal `ts_type:"string"`
+	CashRatio    decimal.Decimal `ts_type:"string"`
 }
 
 type ProjectionPoint struct {
 	SnapshotDate string
-	TotalCurrent float64
-	TotalCash    float64
-	TotalNonCash float64
-	Liabilities  float64
+	TotalCurrent decimal.Decimal `ts_type:"string"`
+	TotalCash    decimal.Decimal `ts_type:"string"`
+	TotalNonCash decimal.Decimal `ts_type:"string"`
+	Liabilities  decimal.Decimal `ts_type:"string"`
 }
 
 type ProgressSummary struct {
-	CurrentNetWorth float64
-	CurrentProfit   float64
-	ProfitRate      float64
-	CashRatio       float64
+	CurrentNetWorth decimal.Decimal `ts_type:"string"`
+	CurrentProfit   decimal.Decimal `ts_type:"string"`
+	ProfitRate      decimal.Decimal `ts_type:"string"`
+	CashRatio       decimal.Decimal `ts_type:"string"`
 }
 
 type AllocationSnapshot struct {
@@ -64,15 +66,15 @@ type AllocationSnapshot struct {
 
 type AllocationSlice struct {
 	Name  string
-	Value float64
+	Value decimal.Decimal `ts_type:"string"`
 }
 
 type GoalEstimate struct {
 	GoalID         int64
 	Name           string
-	TargetAmount   float64
+	TargetAmount   decimal.Decimal `ts_type:"string"`
 	TargetDate     string
 	EstimatedDate  string
 	Status         string
-	RemainingValue float64
+	RemainingValue decimal.Decimal `ts_type:"string"`
 }

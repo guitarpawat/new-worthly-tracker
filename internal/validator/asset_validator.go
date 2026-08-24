@@ -2,10 +2,10 @@ package validator
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
+	"github.com/shopspring/decimal"
 )
 
 type AssetValidator struct{}
@@ -59,17 +59,14 @@ func (AssetValidator) ValidateReorderAssetInput(input dto.ReorderAssetInput) err
 	return validateReorderIDs(input.OrderedIDs)
 }
 
-func validateAssetPayload(name string, assetTypeID int64, autoIncrement float64) error {
+func validateAssetPayload(name string, assetTypeID int64, autoIncrement decimal.Decimal) error {
 	if strings.TrimSpace(name) == "" {
 		return fmt.Errorf("asset name is required")
 	}
 	if assetTypeID <= 0 {
 		return fmt.Errorf("asset type is required")
 	}
-	if math.IsNaN(autoIncrement) || math.IsInf(autoIncrement, 0) {
-		return fmt.Errorf("auto increment must be a valid number")
-	}
-	if autoIncrement < 0 {
+	if autoIncrement.IsNegative() {
 		return fmt.Errorf("auto increment must be non-negative")
 	}
 	if hasMoreThanTwoDecimalPlaces(autoIncrement) {

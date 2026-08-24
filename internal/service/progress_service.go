@@ -3,12 +3,12 @@ package service
 import (
 	"context"
 	"fmt"
-	"math"
 	"slices"
 	"strconv"
 	"time"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
+	"github.com/shopspring/decimal"
 )
 
 type ProgressReader interface {
@@ -125,15 +125,15 @@ func buildProgressAggregates(rows []dto.ProgressSnapshotItem) ([]dto.ProgressPoi
 		}
 
 		current := &aggregates[index]
-		current.point.TotalCurrent += row.CurrentPrice
+		current.point.TotalCurrent = current.point.TotalCurrent.Add(row.CurrentPrice)
 		if !row.IsCash {
-			current.point.TotalBought += row.BoughtPrice
-			current.point.TotalProfit += row.CurrentPrice - row.BoughtPrice
+			current.point.TotalBought = current.point.TotalBought.Add(row.BoughtPrice)
+			current.point.TotalProfit = current.point.TotalProfit.Add(row.CurrentPrice.Sub(row.BoughtPrice))
 		}
 		if row.IsCash {
-			current.point.TotalCash += row.CurrentPrice
+			current.point.TotalCash = current.point.TotalCash.Add(row.CurrentPrice)
 		} else {
-			current.point.TotalNonCash += row.CurrentPrice
+			current.point.TotalNonCash = current.point.TotalNonCash.Add(row.CurrentPrice)
 		}
 
 		assetTypeName := row.AssetTypeName
@@ -156,11 +156,11 @@ func buildProgressAggregates(rows []dto.ProgressSnapshotItem) ([]dto.ProgressPoi
 	trendPoints := make([]dto.ProgressPoint, 0, len(aggregates))
 	allocationSnapshots := make([]dto.AllocationSnapshot, 0, len(aggregates))
 	for _, current := range aggregates {
-		if current.point.TotalBought != 0 {
-			current.point.ProfitRate = current.point.TotalProfit / current.point.TotalBought
+		if !current.point.TotalBought.IsZero() {
+			current.point.ProfitRate = current.point.TotalProfit.Div(current.point.TotalBought)
 		}
-		if current.point.TotalCurrent != 0 {
-			current.point.CashRatio = current.point.TotalCash / current.point.TotalCurrent
+		if !current.point.TotalCurrent.IsZero() {
+			current.point.CashRatio = current.point.TotalCash.Div(current.point.TotalCurrent)
 		}
 
 		trendPoints = append(trendPoints, current.point)
@@ -187,7 +187,7 @@ func accumulateAllocationSlice(
 	indexMap map[string]int,
 	key string,
 	name string,
-	value float64,
+	value decimal.Decimal,
 ) {
 	index, found := indexMap[key]
 	if !found {
@@ -196,7 +196,7 @@ func accumulateAllocationSlice(
 		*target = append(*target, dto.AllocationSlice{Name: name, Value: value})
 		return
 	}
-	(*target)[index].Value += value
+	(*target)[index].Value = (*target)[index].Value.Add(value)
 }
 
 func normalizeCategorySlices(rows []dto.AllocationSlice) []dto.AllocationSlice {
@@ -253,7 +253,7 @@ func buildProjectionPoints(allocationSnapshots []dto.AllocationSnapshot) []dto.P
 		projectedLiabilities := model.projectLiabilities(float64(month))
 		projection = append(projection, dto.ProjectionPoint{
 			SnapshotDate: projectedDate.Format("2006-01-02"),
-			TotalCurrent: projectedCash + projectedNonCash + projectedLiabilities,
+			TotalCurrent: projectedCash.Add(projectedNonCash).Add(projectedLiabilities),
 			TotalCash:    projectedCash,
 			TotalNonCash: projectedNonCash,
 			Liabilities:  projectedLiabilities,
@@ -286,10 +286,10 @@ func buildGoalEstimates(
 			Name:           goal.Name,
 			TargetAmount:   goal.TargetAmount,
 			TargetDate:     goal.TargetDate,
-			RemainingValue: maxFloat(goal.TargetAmount-latestCurrent, 0),
+			RemainingValue: decimal.Max(goal.TargetAmount.Sub(latestCurrent), decimal.Zero),
 		}
 
-		if latestCurrent >= goal.TargetAmount {
+		if latestCurrent.GreaterThanOrEqual(goal.TargetAmount) {
 			estimate.Status = "Reached"
 			estimate.EstimatedDate = latestSnapshotDate
 			estimates = append(estimates, estimate)
@@ -330,19 +330,19 @@ func buildGoalEstimates(
 
 type projectionCategorySnapshot struct {
 	snapshotDate time.Time
-	cash         float64
-	nonCash      float64
-	liabilities  float64
+	cash         decimal.Decimal
+	nonCash      decimal.Decimal
+	liabilities  decimal.Decimal
 }
 
 type hybridProjectionModel struct {
 	latestDate                time.Time
-	latestCash                float64
-	latestNonCash             float64
-	latestLiabilities         float64
-	cashDeltaPerMonth         float64
-	liabilityDeltaPerMonth    float64
-	nonCashGrowthRatePerMonth float64
+	latestCash                decimal.Decimal
+	latestNonCash             decimal.Decimal
+	latestLiabilities         decimal.Decimal
+	cashDeltaPerMonth         decimal.Decimal
+	liabilityDeltaPerMonth    decimal.Decimal
+	nonCashGrowthRatePerMonth decimal.Decimal
 }
 
 func buildHybridProjectionModel(
@@ -357,9 +357,9 @@ func buildHybridProjectionModel(
 		return hybridProjectionModel{}, false
 	}
 
-	cashDeltas := make([]float64, 0, len(categorySnapshots)-1)
-	liabilityDeltas := make([]float64, 0, len(categorySnapshots)-1)
-	nonCashGrowthRates := make([]float64, 0, len(categorySnapshots)-1)
+	cashDeltas := make([]decimal.Decimal, 0, len(categorySnapshots)-1)
+	liabilityDeltas := make([]decimal.Decimal, 0, len(categorySnapshots)-1)
+	nonCashGrowthRates := make([]decimal.Decimal, 0, len(categorySnapshots)-1)
 	for index := 1; index < len(categorySnapshots); index++ {
 		previous := categorySnapshots[index-1]
 		current := categorySnapshots[index]
@@ -368,22 +368,22 @@ func buildHybridProjectionModel(
 			continue
 		}
 
-		cashDeltas = append(
-			cashDeltas,
-			(current.cash-previous.cash)/monthsBetween,
-		)
+		monthDivisor := decimal.NewFromFloat(monthsBetween)
+		cashDeltas = append(cashDeltas, current.cash.Sub(previous.cash).Div(monthDivisor))
 		liabilityDeltas = append(
 			liabilityDeltas,
-			(current.liabilities-previous.liabilities)/monthsBetween,
+			current.liabilities.Sub(previous.liabilities).Div(monthDivisor),
 		)
 
-		if previous.nonCash <= 0 || current.nonCash <= 0 {
+		if !previous.nonCash.IsPositive() || !current.nonCash.IsPositive() {
 			continue
 		}
 
 		nonCashGrowthRates = append(
 			nonCashGrowthRates,
-			math.Pow(current.nonCash/previous.nonCash, 1/monthsBetween)-1,
+			current.nonCash.Div(previous.nonCash).
+				Pow(decimal.NewFromFloat(1/monthsBetween)).
+				Sub(decimal.NewFromInt(1)),
 		)
 	}
 
@@ -397,9 +397,9 @@ func buildHybridProjectionModel(
 		latestCash:                latest.cash,
 		latestNonCash:             latest.nonCash,
 		latestLiabilities:         latest.liabilities,
-		cashDeltaPerMonth:         averageFloat(cashDeltas),
-		liabilityDeltaPerMonth:    medianFloat(liabilityDeltas),
-		nonCashGrowthRatePerMonth: averageFloat(nonCashGrowthRates),
+		cashDeltaPerMonth:         averageDecimal(cashDeltas),
+		liabilityDeltaPerMonth:    medianDecimal(liabilityDeltas),
+		nonCashGrowthRatePerMonth: averageDecimal(nonCashGrowthRates),
 	}, true
 }
 
@@ -423,13 +423,13 @@ func buildProjectionCategorySnapshots(
 	return categorySnapshots, true
 }
 
-func resolveAllocationValue(rows []dto.AllocationSlice, targetName string) float64 {
+func resolveAllocationValue(rows []dto.AllocationSlice, targetName string) decimal.Decimal {
 	for _, row := range rows {
 		if row.Name == targetName {
 			return row.Value
 		}
 	}
-	return 0
+	return decimal.Zero
 }
 
 func diffSnapshotMonths(startDate time.Time, endDate time.Time) float64 {
@@ -438,58 +438,66 @@ func diffSnapshotMonths(startDate time.Time, endDate time.Time) float64 {
 	return endDate.Sub(startDate).Hours() / 24 / averageDaysPerMonth
 }
 
-func averageFloat(values []float64) float64 {
+func averageDecimal(values []decimal.Decimal) decimal.Decimal {
 	if len(values) == 0 {
-		return 0
+		return decimal.Zero
 	}
 
-	total := 0.0
+	total := decimal.Zero
 	for _, value := range values {
-		total += value
+		total = total.Add(value)
 	}
 
-	return total / float64(len(values))
+	return total.Div(decimal.NewFromInt(int64(len(values))))
 }
 
-func medianFloat(values []float64) float64 {
+func medianDecimal(values []decimal.Decimal) decimal.Decimal {
 	if len(values) == 0 {
-		return 0
+		return decimal.Zero
 	}
 
-	sorted := append([]float64{}, values...)
-	slices.Sort(sorted)
+	sorted := append([]decimal.Decimal{}, values...)
+	slices.SortFunc(sorted, func(left decimal.Decimal, right decimal.Decimal) int {
+		return left.Cmp(right)
+	})
 
 	middle := len(sorted) / 2
 	if len(sorted)%2 == 1 {
 		return sorted[middle]
 	}
 
-	return (sorted[middle-1] + sorted[middle]) / 2
+	return sorted[middle-1].Add(sorted[middle]).Div(decimal.NewFromInt(2))
 }
 
-func (m hybridProjectionModel) projectNetWorth(monthsFromLatest float64) float64 {
-	return m.projectCash(monthsFromLatest) +
-		m.projectNonCash(monthsFromLatest) +
-		m.projectLiabilities(monthsFromLatest)
+func (m hybridProjectionModel) projectNetWorth(monthsFromLatest float64) decimal.Decimal {
+	return m.projectCash(monthsFromLatest).
+		Add(m.projectNonCash(monthsFromLatest)).
+		Add(m.projectLiabilities(monthsFromLatest))
 }
 
-func (m hybridProjectionModel) projectCash(monthsFromLatest float64) float64 {
-	return m.latestCash + (m.cashDeltaPerMonth * monthsFromLatest)
+func (m hybridProjectionModel) projectCash(monthsFromLatest float64) decimal.Decimal {
+	return m.latestCash.Add(m.cashDeltaPerMonth.Mul(decimal.NewFromFloat(monthsFromLatest)))
 }
 
-func (m hybridProjectionModel) projectNonCash(monthsFromLatest float64) float64 {
+func (m hybridProjectionModel) projectNonCash(monthsFromLatest float64) decimal.Decimal {
 	projectedNonCash := m.latestNonCash
-	if projectedNonCash <= 0 {
+	if !projectedNonCash.IsPositive() {
 		return projectedNonCash
 	}
 
-	return projectedNonCash * math.Pow(1+m.nonCashGrowthRatePerMonth, monthsFromLatest)
+	return projectedNonCash.Mul(
+		decimal.NewFromInt(1).
+			Add(m.nonCashGrowthRatePerMonth).
+			Pow(decimal.NewFromFloat(monthsFromLatest)),
+	)
 }
 
-func (m hybridProjectionModel) projectLiabilities(monthsFromLatest float64) float64 {
-	projectedLiabilities := m.latestLiabilities + (m.liabilityDeltaPerMonth * monthsFromLatest)
-	if projectedLiabilities > 0 {
-		return 0
+func (m hybridProjectionModel) projectLiabilities(monthsFromLatest float64) decimal.Decimal {
+	projectedLiabilities := m.latestLiabilities.Add(
+		m.liabilityDeltaPerMonth.Mul(decimal.NewFromFloat(monthsFromLatest)),
+	)
+	if projectedLiabilities.IsPositive() {
+		return decimal.Zero
 	}
 
 	return projectedLiabilities
@@ -498,7 +506,7 @@ func (m hybridProjectionModel) projectLiabilities(monthsFromLatest float64) floa
 func (m hybridProjectionModel) hasPositiveNetWorthTrend(horizonMonths int) bool {
 	latestNetWorth := m.projectNetWorth(0)
 	for month := 1; month <= horizonMonths; month++ {
-		if m.projectNetWorth(float64(month)) > latestNetWorth {
+		if m.projectNetWorth(float64(month)).GreaterThan(latestNetWorth) {
 			return true
 		}
 	}
@@ -507,19 +515,19 @@ func (m hybridProjectionModel) hasPositiveNetWorthTrend(horizonMonths int) bool 
 }
 
 func (m hybridProjectionModel) findTargetDate(
-	targetAmount float64,
+	targetAmount decimal.Decimal,
 	maxMonths int,
 ) (time.Time, bool) {
 	previousDate := m.latestDate
 	previousNetWorth := m.projectNetWorth(0)
-	if previousNetWorth >= targetAmount {
+	if previousNetWorth.GreaterThanOrEqual(targetAmount) {
 		return previousDate, true
 	}
 
 	for month := 1; month <= maxMonths; month++ {
 		projectedDate := m.latestDate.AddDate(0, month, 0)
 		projectedNetWorth := m.projectNetWorth(float64(month))
-		if projectedNetWorth >= targetAmount {
+		if projectedNetWorth.GreaterThanOrEqual(targetAmount) {
 			return interpolateProjectionDate(
 				previousDate,
 				previousNetWorth,
@@ -538,30 +546,24 @@ func (m hybridProjectionModel) findTargetDate(
 
 func interpolateProjectionDate(
 	startDate time.Time,
-	startValue float64,
+	startValue decimal.Decimal,
 	endDate time.Time,
-	endValue float64,
-	targetValue float64,
+	endValue decimal.Decimal,
+	targetValue decimal.Decimal,
 ) time.Time {
-	growth := endValue - startValue
-	if growth <= 0 {
+	growth := endValue.Sub(startValue)
+	if !growth.IsPositive() {
 		return endDate
 	}
 
-	progress := (targetValue - startValue) / growth
-	if progress < 0 {
-		progress = 0
+	progress := targetValue.Sub(startValue).Div(growth)
+	if progress.IsNegative() {
+		progress = decimal.Zero
 	}
-	if progress > 1 {
-		progress = 1
+	if progress.GreaterThan(decimal.NewFromInt(1)) {
+		progress = decimal.NewFromInt(1)
 	}
 
-	return startDate.Add(time.Duration(float64(endDate.Sub(startDate)) * progress))
-}
-
-func maxFloat(left float64, right float64) float64 {
-	if left > right {
-		return left
-	}
-	return right
+	progressFloat, _ := progress.Float64()
+	return startDate.Add(time.Duration(float64(endDate.Sub(startDate)) * progressFloat))
 }

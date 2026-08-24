@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/shopspring/decimal"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
 	"github.com/guitarpawat/worthly-tracker/internal/recorderr"
@@ -119,7 +120,7 @@ func (r *RecordSnapshotRepository) SaveSnapshot(
 		meta := assetMetaByID[item.AssetID]
 		boughtPrice := item.BoughtPrice
 		if meta.IsCash {
-			boughtPrice = 0
+			boughtPrice = decimal.Zero
 		}
 
 		result, err := tx.ExecContext(ctx, `
@@ -268,7 +269,7 @@ func (r *RecordSnapshotRepository) CreateSnapshot(
 		meta := assetMetaByID[item.AssetID]
 		boughtPrice := item.BoughtPrice
 		if meta.IsCash {
-			boughtPrice = 0
+			boughtPrice = decimal.Zero
 		}
 
 		if _, err := tx.ExecContext(ctx, `

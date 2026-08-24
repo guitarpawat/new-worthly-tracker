@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/shopspring/decimal"
 
 	dbfiles "github.com/guitarpawat/worthly-tracker/db"
 	adapterdb "github.com/guitarpawat/worthly-tracker/internal/adapter/db"
@@ -218,14 +219,14 @@ func TestRecordSnapshotRepository_GetNewSnapshotDraftUsesLatestSnapshotAutofillA
 	if snapshot.Items[0].AssetID != 2 || snapshot.Items[1].AssetID != 1 {
 		t.Fatalf("expected cash then investment ordering, got %+v", snapshot.Items)
 	}
-	if snapshot.Items[0].BoughtPrice != 0 {
-		t.Fatalf("expected cash bought price 0, got %f", snapshot.Items[0].BoughtPrice)
+	if !snapshot.Items[0].BoughtPrice.IsZero() {
+		t.Fatalf("expected cash bought price 0, got %s", snapshot.Items[0].BoughtPrice)
 	}
-	if snapshot.Items[1].BoughtPrice != 12500 {
-		t.Fatalf("expected auto incremented bought price 12500, got %f", snapshot.Items[1].BoughtPrice)
+	if !snapshot.Items[1].BoughtPrice.Equal(dec(12500)) {
+		t.Fatalf("expected auto incremented bought price 12500, got %s", snapshot.Items[1].BoughtPrice)
 	}
-	if snapshot.Items[1].CurrentPrice != 15000 {
-		t.Fatalf("expected autofilled current price 15000, got %f", snapshot.Items[1].CurrentPrice)
+	if !snapshot.Items[1].CurrentPrice.Equal(dec(15000)) {
+		t.Fatalf("expected autofilled current price 15000, got %s", snapshot.Items[1].CurrentPrice)
 	}
 	if snapshot.Items[1].Remarks != "Current" {
 		t.Fatalf("expected autofilled remarks Current, got %q", snapshot.Items[1].Remarks)
@@ -285,8 +286,8 @@ func TestRecordSnapshotRepository_SaveSnapshotUpdatesDateSoftDeletesRemovedRowsA
 		SnapshotID:   2,
 		SnapshotDate: "2026-04-15",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 12500, CurrentPrice: 15800, Remarks: "Updated"},
-			{AssetID: 3, BoughtPrice: 5100, CurrentPrice: 5200, Remarks: "Added"},
+			{AssetID: 1, BoughtPrice: dec(12500), CurrentPrice: dec(15800), Remarks: "Updated"},
+			{AssetID: 3, BoughtPrice: dec(5100), CurrentPrice: dec(5200), Remarks: "Added"},
 		},
 	})
 	if err != nil {
@@ -337,15 +338,15 @@ func TestRecordSnapshotRepository_SaveSnapshotForcesCashBoughtPriceToZero(t *tes
 		SnapshotID:   2,
 		SnapshotDate: "2026-04-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 12000, CurrentPrice: 15000, Remarks: "ETF"},
-			{AssetID: 2, BoughtPrice: 99999, CurrentPrice: 7000, Remarks: "Cash"},
+			{AssetID: 1, BoughtPrice: dec(12000), CurrentPrice: dec(15000), Remarks: "ETF"},
+			{AssetID: 2, BoughtPrice: dec(99999), CurrentPrice: dec(7000), Remarks: "Cash"},
 		},
 	})
 	if err != nil {
 		t.Fatalf("SaveSnapshot returned error: %v", err)
 	}
 
-	var boughtPrice float64
+	var boughtPrice decimal.Decimal
 	if err := database.Get(&boughtPrice, `
 		SELECT bought_price
 		FROM record_items
@@ -355,8 +356,8 @@ func TestRecordSnapshotRepository_SaveSnapshotForcesCashBoughtPriceToZero(t *tes
 	`); err != nil {
 		t.Fatalf("get cash bought price: %v", err)
 	}
-	if boughtPrice != 0 {
-		t.Fatalf("expected cash bought price to be 0, got %f", boughtPrice)
+	if !boughtPrice.IsZero() {
+		t.Fatalf("expected cash bought price to be 0, got %s", boughtPrice)
 	}
 }
 
@@ -372,7 +373,7 @@ func TestRecordSnapshotRepository_SaveSnapshotDeactivatesRemovedAssetsWhenEditin
 		SnapshotID:   2,
 		SnapshotDate: "2026-04-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 12000, CurrentPrice: 15000, Remarks: "ETF only"},
+			{AssetID: 1, BoughtPrice: dec(12000), CurrentPrice: dec(15000), Remarks: "ETF only"},
 		},
 	})
 	if err != nil {
@@ -411,8 +412,8 @@ func TestRecordSnapshotRepository_SaveSnapshotDeactivatesAssetsWhenOlderSnapshot
 		SnapshotID:   1,
 		SnapshotDate: "2026-05-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 10000, CurrentPrice: 14000, Remarks: "Prev"},
-			{AssetID: 3, BoughtPrice: 5000, CurrentPrice: 4500, Remarks: "Old"},
+			{AssetID: 1, BoughtPrice: dec(10000), CurrentPrice: dec(14000), Remarks: "Prev"},
+			{AssetID: 3, BoughtPrice: dec(5000), CurrentPrice: dec(4500), Remarks: "Old"},
 		},
 	})
 	if err != nil {
@@ -443,7 +444,7 @@ func TestRecordSnapshotRepository_CreateSnapshotDeactivatesAssetsRemovedFromPrev
 	_, err := repo.CreateSnapshot(context.Background(), dto.CreateSnapshotInput{
 		SnapshotDate: "2026-05-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 12500, CurrentPrice: 16000, Remarks: "ETF only"},
+			{AssetID: 1, BoughtPrice: dec(12500), CurrentPrice: dec(16000), Remarks: "ETF only"},
 		},
 	})
 	if err != nil {
@@ -485,7 +486,7 @@ func TestRecordSnapshotRepository_CreateSnapshotDoesNotDeactivateAssetsWhenNewSn
 	_, err := repo.CreateSnapshot(context.Background(), dto.CreateSnapshotInput{
 		SnapshotDate: "2026-02-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 9000, CurrentPrice: 9100, Remarks: "Older snapshot"},
+			{AssetID: 1, BoughtPrice: dec(9000), CurrentPrice: dec(9100), Remarks: "Older snapshot"},
 		},
 	})
 	if err != nil {
@@ -516,7 +517,7 @@ func TestRecordSnapshotRepository_CreateSnapshotRejectsInactiveAssets(t *testing
 	_, err := repo.CreateSnapshot(context.Background(), dto.CreateSnapshotInput{
 		SnapshotDate: "2026-05-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 3, BoughtPrice: 5000, CurrentPrice: 5100, Remarks: "Inactive"},
+			{AssetID: 3, BoughtPrice: dec(5000), CurrentPrice: dec(5100), Remarks: "Inactive"},
 		},
 	})
 	if !errors.Is(err, recorderr.ErrAssetUnavailable) {
@@ -536,9 +537,9 @@ func TestRecordSnapshotRepository_SaveSnapshotRejectsAddingInactiveAssets(t *tes
 		SnapshotID:   2,
 		SnapshotDate: "2026-04-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 12000, CurrentPrice: 15000, Remarks: "Current"},
-			{AssetID: 2, BoughtPrice: 0, CurrentPrice: 7000, Remarks: "Cash"},
-			{AssetID: 3, BoughtPrice: 5000, CurrentPrice: 5100, Remarks: "Inactive"},
+			{AssetID: 1, BoughtPrice: dec(12000), CurrentPrice: dec(15000), Remarks: "Current"},
+			{AssetID: 2, BoughtPrice: dec(0), CurrentPrice: dec(7000), Remarks: "Cash"},
+			{AssetID: 3, BoughtPrice: dec(5000), CurrentPrice: dec(5100), Remarks: "Inactive"},
 		},
 	})
 	if !errors.Is(err, recorderr.ErrAssetUnavailable) {
@@ -558,7 +559,7 @@ func TestRecordSnapshotRepository_SaveSnapshotReturnsConflictForDuplicateDate(t 
 		SnapshotID:   2,
 		SnapshotDate: "2026-03-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 12000, CurrentPrice: 15000},
+			{AssetID: 1, BoughtPrice: dec(12000), CurrentPrice: dec(15000)},
 		},
 	})
 	if !errors.Is(err, recorderr.ErrSnapshotDateAlreadyExists) {
@@ -584,9 +585,9 @@ func TestRecordSnapshotRepository_CreateSnapshotInsertsItemsAndReturnsLatestOffs
 	result, err := repo.CreateSnapshot(context.Background(), dto.CreateSnapshotInput{
 		SnapshotDate: "2026-05-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 12500, CurrentPrice: 16000, Remarks: "New month"},
-			{AssetID: 2, BoughtPrice: 99999, CurrentPrice: 7200, Remarks: "Cash"},
-			{AssetID: 3, BoughtPrice: 5100, CurrentPrice: 5300, Remarks: "Re-added inactive"},
+			{AssetID: 1, BoughtPrice: dec(12500), CurrentPrice: dec(16000), Remarks: "New month"},
+			{AssetID: 2, BoughtPrice: dec(99999), CurrentPrice: dec(7200), Remarks: "Cash"},
+			{AssetID: 3, BoughtPrice: dec(5100), CurrentPrice: dec(5300), Remarks: "Re-added inactive"},
 		},
 	})
 	if err != nil {
@@ -610,7 +611,7 @@ func TestRecordSnapshotRepository_CreateSnapshotInsertsItemsAndReturnsLatestOffs
 		t.Fatalf("expected 3 items, got %d", len(snapshot.Items))
 	}
 
-	var cashBoughtPrice float64
+	var cashBoughtPrice decimal.Decimal
 	if err := database.Get(&cashBoughtPrice, `
 		SELECT bought_price
 		FROM record_items ri
@@ -622,8 +623,8 @@ func TestRecordSnapshotRepository_CreateSnapshotInsertsItemsAndReturnsLatestOffs
 	`); err != nil {
 		t.Fatalf("get created cash bought price: %v", err)
 	}
-	if cashBoughtPrice != 0 {
-		t.Fatalf("expected created cash bought price 0, got %f", cashBoughtPrice)
+	if !cashBoughtPrice.IsZero() {
+		t.Fatalf("expected created cash bought price 0, got %s", cashBoughtPrice)
 	}
 }
 
@@ -638,7 +639,7 @@ func TestRecordSnapshotRepository_CreateSnapshotReturnsConflictForDuplicateDate(
 	_, err := repo.CreateSnapshot(context.Background(), dto.CreateSnapshotInput{
 		SnapshotDate: "2026-04-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 1, CurrentPrice: 1},
+			{AssetID: 1, BoughtPrice: dec(1), CurrentPrice: dec(1)},
 		},
 	})
 	if !errors.Is(err, recorderr.ErrSnapshotDateAlreadyExists) {
