@@ -26,7 +26,7 @@ It is built with Go, Wails, and SQLite, with a spreadsheet-style light UI aimed 
 
 ## Requirements
 
-- Go 1.26+
+- Go 1.27+
 - Node.js for frontend tests
 - Wails CLI
 - SQLite is embedded through `modernc.org/sqlite`, so CGO is not required
@@ -69,7 +69,7 @@ The built binary will be written to `build/bin/`.
 
 Install first:
 
-- Go 1.26+
+- Go 1.27+
 - Node.js
 - Wails CLI
 - Microsoft WebView2 runtime
@@ -92,7 +92,7 @@ The built executable will be written to `build/bin/`.
 
 Install first:
 
-- Go 1.26+
+- Go 1.27+
 - Node.js
 - Wails CLI
 - Xcode Command Line Tools
