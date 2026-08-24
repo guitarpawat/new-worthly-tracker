@@ -157,6 +157,37 @@
     percentCell.textContent = formatPercent(profitPercent);
   }
 
+  function keepTabbedEditFieldVisible(event) {
+    if (event.key !== "Tab" || event.shiftKey) {
+      return;
+    }
+
+    const schedule = typeof root.requestAnimationFrame === "function"
+      ? root.requestAnimationFrame.bind(root)
+      : (callback) => root.setTimeout(callback, 0);
+    schedule(() => {
+      const activeElement = root.document.activeElement;
+      const isEditInput = typeof activeElement?.matches === "function" && activeElement.matches(
+        ".edit-bought-input, .edit-current-input, .edit-remarks-input",
+      );
+      if (!isEditInput || typeof activeElement.getBoundingClientRect !== "function") {
+        return;
+      }
+
+      const viewportHeight = root.innerHeight || root.document.documentElement?.clientHeight || 0;
+      const bounds = activeElement.getBoundingClientRect();
+      if (viewportHeight <= 0 || bounds.bottom <= viewportHeight) {
+        return;
+      }
+
+      const fieldCenter = (bounds.top + bounds.bottom) / 2;
+      root.scrollBy({
+        top: fieldCenter - (viewportHeight * 0.4),
+        behavior: "smooth",
+      });
+    });
+  }
+
   function calculateProfitFromRow(row) {
     if (row.IsCash) {
       return 0;
@@ -227,7 +258,6 @@
 
       config.onChange(row, parseEditableNumber(sanitized));
       config.onDirty();
-      refreshRowMetrics(assetID);
     });
 
     input.addEventListener("blur", (event) => {
@@ -239,6 +269,7 @@
 
       const value = input.classList.contains("edit-current-input") ? row.CurrentPrice : row.BoughtPrice;
       event.target.value = formatEditableNumber(value);
+      refreshRowMetrics(assetID);
     });
   }
 
@@ -302,6 +333,7 @@
     isEditHorizontalShortcutKey,
     isEditShortcutKey,
     isManualFieldEditing,
+    keepTabbedEditFieldVisible,
     resolveEditHorizontalMove,
     resolveEditVerticalDirection,
     shouldActivateManualFieldOnEnter,

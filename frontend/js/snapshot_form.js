@@ -36,6 +36,7 @@
     isEditGridShortcutKey,
     isEditHorizontalShortcutKey,
     isManualFieldEditing,
+    keepTabbedEditFieldVisible,
     resolveEditHorizontalMove,
     resolveEditVerticalDirection,
     shouldActivateManualFieldOnEnter,
@@ -256,6 +257,8 @@
   }
 
   function handleEditKeydown(event, app) {
+    keepTabbedEditFieldVisible(event);
+
     if (snapshotAssetModal.shouldCloseSnapshotAssetModalOnEscape({
       key: event.key,
       hasSnapshotAssetModal: Boolean(state.snapshotAssetModal),
