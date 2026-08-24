@@ -7,6 +7,7 @@ type ProgressFilter struct {
 
 type ProgressSnapshotItem struct {
 	SnapshotID    int64   `db:"snapshot_id"`
+	AssetID       int64   `db:"asset_id"`
 	SnapshotDate  string  `db:"snapshot_date"`
 	AssetName     string  `db:"asset_name"`
 	AssetTypeName string  `db:"asset_type_name"`

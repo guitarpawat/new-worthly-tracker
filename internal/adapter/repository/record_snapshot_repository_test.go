@@ -400,6 +400,38 @@ func TestRecordSnapshotRepository_SaveSnapshotDeactivatesRemovedAssetsWhenEditin
 	}
 }
 
+func TestRecordSnapshotRepository_SaveSnapshotDeactivatesAssetsWhenOlderSnapshotBecomesLatest(t *testing.T) {
+	t.Parallel()
+
+	database := openTestDB(t)
+	insertTestSnapshotData(t, database)
+	repo := NewRecordSnapshotRepository(database)
+
+	_, err := repo.SaveSnapshot(context.Background(), dto.SaveSnapshotInput{
+		SnapshotID:   1,
+		SnapshotDate: "2026-05-12",
+		Items: []dto.SaveSnapshotItemInput{
+			{AssetID: 1, BoughtPrice: 10000, CurrentPrice: 14000, Remarks: "Prev"},
+			{AssetID: 3, BoughtPrice: 5000, CurrentPrice: 4500, Remarks: "Old"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SaveSnapshot returned error: %v", err)
+	}
+
+	var isActive bool
+	if err := database.Get(&isActive, `
+		SELECT is_active
+		FROM assets
+		WHERE id = 2
+	`); err != nil {
+		t.Fatalf("get omitted prior-latest asset active flag: %v", err)
+	}
+	if isActive {
+		t.Fatal("expected asset omitted from promoted latest snapshot to be inactive")
+	}
+}
+
 func TestRecordSnapshotRepository_CreateSnapshotDeactivatesAssetsRemovedFromPreviousLatestWhenNewSnapshotBecomesLatest(t *testing.T) {
 	t.Parallel()
 

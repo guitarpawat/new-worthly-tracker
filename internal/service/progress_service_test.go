@@ -91,8 +91,8 @@ func TestProgressService_GetPageBuildsTrendSummaryProjectionAllocationAndGoalEst
 		t.Fatalf("expected 3 trend points, got %d", len(page.TrendPoints))
 	}
 	assertProgressFloatEqual(t, 14300, page.Summary.CurrentNetWorth)
-	assertProgressFloatEqual(t, 4300, page.Summary.CurrentProfit)
-	assertProgressFloatInDelta(t, 0.4300, page.Summary.ProfitRate)
+	assertProgressFloatEqual(t, 2500, page.Summary.CurrentProfit)
+	assertProgressFloatInDelta(t, 0.25, page.Summary.ProfitRate)
 	assertProgressFloatInDelta(t, 0.1258741258, page.Summary.CashRatio)
 
 	if len(page.ProjectionPoints) < 3 {
@@ -131,6 +131,38 @@ func TestProgressService_GetPageBuildsTrendSummaryProjectionAllocationAndGoalEst
 	if page.GoalEstimates[1].EstimatedDate == "" || page.GoalEstimates[1].EstimatedDate >= "2026-04-12" {
 		t.Fatalf("expected interpolated goal date before next month, got %+v", page.GoalEstimates[1])
 	}
+}
+
+func TestBuildProgressAggregatesKeepsSameNamedAssetsSeparateAcrossTypes(t *testing.T) {
+	t.Parallel()
+
+	_, allocations := buildProgressAggregates([]dto.ProgressSnapshotItem{
+		{
+			AssetID:       1,
+			SnapshotDate:  "2026-04-12",
+			AssetName:     "Reserve",
+			AssetTypeName: "Cash",
+			CurrentPrice:  1000,
+			IsCash:        true,
+		},
+		{
+			AssetID:       2,
+			SnapshotDate:  "2026-04-12",
+			AssetName:     "Reserve",
+			AssetTypeName: "Investment",
+			BoughtPrice:   1500,
+			CurrentPrice:  2000,
+		},
+	})
+
+	if len(allocations) != 1 {
+		t.Fatalf("expected one allocation snapshot, got %d", len(allocations))
+	}
+	if len(allocations[0].ByAsset) != 2 {
+		t.Fatalf("expected same-named assets to remain separate, got %+v", allocations[0].ByAsset)
+	}
+	assertProgressFloatEqual(t, 1000, allocations[0].ByAsset[0].Value)
+	assertProgressFloatEqual(t, 2000, allocations[0].ByAsset[1].Value)
 }
 
 func TestProgressService_GetPageMarksGoalsAsReachedOrNeedsPositiveTrend(t *testing.T) {
