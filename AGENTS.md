@@ -245,6 +245,12 @@ Before finishing a substantial task:
 - update `README.md` only for user-facing behavior
 - update `AGENTS.md` only for maintenance knowledge
 
+### Wails CLI Version Alignment
+
+- Keep the Wails CLI version used by `.github/workflows/ci.yml` and `.github/workflows/release.yml` aligned with the `github.com/wailsapp/wails/v2` version in `go.mod`.
+- An older Wails CLI can fail during binding generation on a newer Go toolchain with a misleading internal error such as `package "errors" without types was imported` against a project package. Treat the CLI/library version mismatch warning immediately before that error as the primary lead.
+- When upgrading Wails, update both workflow CLI pins and verify a production build with the project's Go version.
+
 ## Project Skills
 
 Project-local skills are intentionally trimmed to a small maintenance set. If a skill is missing, prefer normal repo exploration over re-adding a large generic skill bundle.
