@@ -16,15 +16,15 @@ func TestGoalValidator_ValidateCreateGoalInputRejectsInvalidValues(t *testing.T)
 	}{
 		{
 			name:  "missing name",
-			input: dto.CreateGoalInput{TargetAmount: 1000},
+			input: dto.CreateGoalInput{TargetAmount: dec(1000)},
 		},
 		{
 			name:  "non positive amount",
-			input: dto.CreateGoalInput{Name: "Goal", TargetAmount: 0},
+			input: dto.CreateGoalInput{Name: "Goal", TargetAmount: dec(0)},
 		},
 		{
 			name:  "bad date",
-			input: dto.CreateGoalInput{Name: "Goal", TargetAmount: 1000, TargetDate: "12/31/2026"},
+			input: dto.CreateGoalInput{Name: "Goal", TargetAmount: dec(1000), TargetDate: "12/31/2026"},
 		},
 	}
 

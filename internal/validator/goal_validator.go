@@ -2,11 +2,11 @@ package validator
 
 import (
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
+	"github.com/shopspring/decimal"
 )
 
 type GoalValidator struct{}
@@ -29,14 +29,11 @@ func (GoalValidator) ValidateDeleteGoalInput(input dto.DeleteGoalInput) error {
 	return nil
 }
 
-func validateGoalPayload(name string, targetAmount float64, targetDate string) error {
+func validateGoalPayload(name string, targetAmount decimal.Decimal, targetDate string) error {
 	if strings.TrimSpace(name) == "" {
 		return fmt.Errorf("goal name is required")
 	}
-	if math.IsNaN(targetAmount) || math.IsInf(targetAmount, 0) {
-		return fmt.Errorf("goal target amount must be a valid number")
-	}
-	if targetAmount <= 0 {
+	if !targetAmount.IsPositive() {
 		return fmt.Errorf("goal target amount must be greater than zero")
 	}
 	if hasMoreThanTwoDecimalPlaces(targetAmount) {

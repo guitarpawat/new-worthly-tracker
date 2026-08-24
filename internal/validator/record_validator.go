@@ -2,10 +2,10 @@ package validator
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
+	"github.com/shopspring/decimal"
 )
 
 type RecordValidator struct{}
@@ -57,9 +57,6 @@ func validateSnapshotPayload(snapshotDate string, items []dto.SaveSnapshotItemIn
 		}
 		seenAssetIDs[item.AssetID] = struct{}{}
 
-		if !isFiniteNumber(item.BoughtPrice) || !isFiniteNumber(item.CurrentPrice) {
-			return fmt.Errorf("item %d contains invalid numeric values", index+1)
-		}
 		if hasMoreThanTwoDecimalPlaces(item.BoughtPrice) || hasMoreThanTwoDecimalPlaces(item.CurrentPrice) {
 			return fmt.Errorf("item %d allows at most 2 decimal places", index+1)
 		}
@@ -79,11 +76,6 @@ func (RecordValidator) ValidateDeleteSnapshotInput(input dto.DeleteSnapshotInput
 	return nil
 }
 
-func isFiniteNumber(value float64) bool {
-	return !math.IsNaN(value) && !math.IsInf(value, 0)
-}
-
-func hasMoreThanTwoDecimalPlaces(value float64) bool {
-	scaled := math.Abs(value * 100)
-	return math.Abs(scaled-math.Round(scaled)) > 0.0000001
+func hasMoreThanTwoDecimalPlaces(value decimal.Decimal) bool {
+	return !value.Equal(value.Round(2))
 }

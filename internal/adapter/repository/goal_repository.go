@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/shopspring/decimal"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
 	"github.com/guitarpawat/worthly-tracker/internal/recorderr"
@@ -16,10 +17,10 @@ type GoalRepository struct {
 }
 
 type goalRow struct {
-	ID           int64          `db:"id"`
-	Name         string         `db:"name"`
-	TargetAmount float64        `db:"target_amount"`
-	TargetDate   sql.NullString `db:"target_date"`
+	ID           int64           `db:"id"`
+	Name         string          `db:"name"`
+	TargetAmount decimal.Decimal `db:"target_amount"`
+	TargetDate   sql.NullString  `db:"target_date"`
 }
 
 func NewGoalRepository(db *sqlx.DB) *GoalRepository {

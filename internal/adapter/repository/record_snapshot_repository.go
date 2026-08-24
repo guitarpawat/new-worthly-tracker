@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/shopspring/decimal"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
 	"github.com/guitarpawat/worthly-tracker/internal/recorderr"
@@ -23,19 +24,19 @@ type snapshotRow struct {
 }
 
 type snapshotItemRow struct {
-	AssetID           int64          `db:"asset_id"`
-	AssetName         string         `db:"asset_name"`
-	AssetTypeID       sql.NullInt64  `db:"asset_type_id"`
-	AssetTypeName     sql.NullString `db:"asset_type_name"`
-	AssetTypeOrdering sql.NullInt64  `db:"asset_type_ordering"`
-	AssetOrdering     int            `db:"asset_ordering"`
-	Broker            string         `db:"broker"`
-	AssetIsCash       bool           `db:"asset_is_cash"`
-	AssetIsLiability  bool           `db:"asset_is_liability"`
-	AssetIsActive     bool           `db:"asset_is_active"`
-	BoughtPrice       float64        `db:"bought_price"`
-	CurrentPrice      float64        `db:"current_price"`
-	Remarks           string         `db:"remarks"`
+	AssetID           int64           `db:"asset_id"`
+	AssetName         string          `db:"asset_name"`
+	AssetTypeID       sql.NullInt64   `db:"asset_type_id"`
+	AssetTypeName     sql.NullString  `db:"asset_type_name"`
+	AssetTypeOrdering sql.NullInt64   `db:"asset_type_ordering"`
+	AssetOrdering     int             `db:"asset_ordering"`
+	Broker            string          `db:"broker"`
+	AssetIsCash       bool            `db:"asset_is_cash"`
+	AssetIsLiability  bool            `db:"asset_is_liability"`
+	AssetIsActive     bool            `db:"asset_is_active"`
+	BoughtPrice       decimal.Decimal `db:"bought_price"`
+	CurrentPrice      decimal.Decimal `db:"current_price"`
+	Remarks           string          `db:"remarks"`
 }
 
 type availableAssetRow struct {
@@ -51,19 +52,19 @@ type availableAssetRow struct {
 }
 
 type autofillAssetRow struct {
-	AssetID           int64           `db:"asset_id"`
-	AssetName         string          `db:"asset_name"`
-	AssetTypeID       int64           `db:"asset_type_id"`
-	AssetTypeName     string          `db:"asset_type_name"`
-	AssetTypeOrdering int             `db:"asset_type_ordering"`
-	AssetOrdering     int             `db:"asset_ordering"`
-	Broker            string          `db:"broker"`
-	AssetIsCash       bool            `db:"asset_is_cash"`
-	AssetIsActive     bool            `db:"asset_is_active"`
-	AutoIncrement     float64         `db:"auto_increment"`
-	PrevBoughtPrice   sql.NullFloat64 `db:"prev_bought_price"`
-	PrevCurrentPrice  sql.NullFloat64 `db:"prev_current_price"`
-	PrevRemarks       sql.NullString  `db:"prev_remarks"`
+	AssetID           int64               `db:"asset_id"`
+	AssetName         string              `db:"asset_name"`
+	AssetTypeID       int64               `db:"asset_type_id"`
+	AssetTypeName     string              `db:"asset_type_name"`
+	AssetTypeOrdering int                 `db:"asset_type_ordering"`
+	AssetOrdering     int                 `db:"asset_ordering"`
+	Broker            string              `db:"broker"`
+	AssetIsCash       bool                `db:"asset_is_cash"`
+	AssetIsActive     bool                `db:"asset_is_active"`
+	AutoIncrement     decimal.Decimal     `db:"auto_increment"`
+	PrevBoughtPrice   decimal.NullDecimal `db:"prev_bought_price"`
+	PrevCurrentPrice  decimal.NullDecimal `db:"prev_current_price"`
+	PrevRemarks       sql.NullString      `db:"prev_remarks"`
 }
 
 func NewRecordSnapshotRepository(db *sqlx.DB) *RecordSnapshotRepository {
@@ -250,23 +251,23 @@ func (r *RecordSnapshotRepository) GetNewSnapshotDraft(
 	items := make([]dto.EditableSnapshotItem, 0, len(rows))
 	excludedAssetIDs := make([]int64, 0, len(rows))
 	for _, row := range rows {
-		boughtPrice := 0.0
-		currentPrice := 0.0
+		boughtPrice := decimal.Zero
+		currentPrice := decimal.Zero
 		remarks := ""
 		if row.PrevBoughtPrice.Valid {
-			boughtPrice = row.PrevBoughtPrice.Float64
+			boughtPrice = row.PrevBoughtPrice.Decimal
 		}
 		if row.PrevCurrentPrice.Valid {
-			currentPrice = row.PrevCurrentPrice.Float64
+			currentPrice = row.PrevCurrentPrice.Decimal
 		}
 		if row.PrevRemarks.Valid {
 			remarks = row.PrevRemarks.String
 		}
 		if !row.AssetIsCash {
-			boughtPrice += row.AutoIncrement
+			boughtPrice = boughtPrice.Add(row.AutoIncrement)
 		}
 		if row.AssetIsCash {
-			boughtPrice = 0
+			boughtPrice = decimal.Zero
 		}
 
 		items = append(items, dto.EditableSnapshotItem{

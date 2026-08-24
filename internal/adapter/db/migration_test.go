@@ -7,6 +7,7 @@ import (
 	"testing/fstest"
 
 	dbfiles "github.com/guitarpawat/worthly-tracker/db"
+	"github.com/shopspring/decimal"
 )
 
 func TestApplyMigrations_ConvertsBooleanAutoIncrementSchemaToNumericAmount(t *testing.T) {
@@ -54,8 +55,8 @@ func TestApplyMigrations_ConvertsBooleanAutoIncrementSchemaToNumericAmount(t *te
 	}
 
 	type assetRow struct {
-		ID            int64   `db:"id"`
-		AutoIncrement float64 `db:"auto_increment"`
+		ID            int64           `db:"id"`
+		AutoIncrement decimal.Decimal `db:"auto_increment"`
 	}
 
 	rows := []assetRow{}
@@ -69,11 +70,11 @@ func TestApplyMigrations_ConvertsBooleanAutoIncrementSchemaToNumericAmount(t *te
 	if len(rows) != 2 {
 		t.Fatalf("expected 2 migrated assets, got %d", len(rows))
 	}
-	if rows[0].AutoIncrement != 6500 {
-		t.Fatalf("expected first asset auto_increment 6500, got %f", rows[0].AutoIncrement)
+	if !rows[0].AutoIncrement.Equal(decimal.NewFromInt(6500)) {
+		t.Fatalf("expected first asset auto_increment 6500, got %s", rows[0].AutoIncrement)
 	}
-	if rows[1].AutoIncrement != 0 {
-		t.Fatalf("expected second asset auto_increment 0, got %f", rows[1].AutoIncrement)
+	if !rows[1].AutoIncrement.IsZero() {
+		t.Fatalf("expected second asset auto_increment 0, got %s", rows[1].AutoIncrement)
 	}
 
 	var joinedRows int

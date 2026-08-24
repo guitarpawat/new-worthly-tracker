@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
+	"github.com/shopspring/decimal"
 )
 
 type progressReaderStub struct {
@@ -39,7 +40,7 @@ func TestProgressService_GetPageUsesLatestTwelveDatesAsDefaultRange(t *testing.T
 			"2026-01-12",
 		},
 		rows: []dto.ProgressSnapshotItem{
-			{SnapshotDate: "2026-01-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: 1000, BoughtPrice: 900},
+			{SnapshotDate: "2026-01-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: dec(1000), BoughtPrice: dec(900)},
 		},
 	}, goalReaderStub{})
 
@@ -59,20 +60,20 @@ func TestProgressService_GetPageBuildsTrendSummaryProjectionAllocationAndGoalEst
 	service := NewProgressService(progressReaderStub{
 		dates: []string{"2026-01-12", "2026-02-12", "2026-03-12"},
 		rows: []dto.ProgressSnapshotItem{
-			{SnapshotDate: "2026-01-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: 10000, BoughtPrice: 9000},
-			{SnapshotDate: "2026-01-12", AssetName: "Wallet", AssetTypeName: "Cash", CurrentPrice: 2000, BoughtPrice: 500, IsCash: true},
-			{SnapshotDate: "2026-01-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: -1000, BoughtPrice: 0, IsCash: true, IsLiability: true},
-			{SnapshotDate: "2026-02-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: 11000, BoughtPrice: 9500},
-			{SnapshotDate: "2026-02-12", AssetName: "Wallet", AssetTypeName: "Cash", CurrentPrice: 2400, BoughtPrice: 500, IsCash: true},
-			{SnapshotDate: "2026-02-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: -900, BoughtPrice: 0, IsCash: true, IsLiability: true},
-			{SnapshotDate: "2026-03-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: 12500, BoughtPrice: 10000},
-			{SnapshotDate: "2026-03-12", AssetName: "Wallet", AssetTypeName: "Cash", CurrentPrice: 2600, BoughtPrice: 500, IsCash: true},
-			{SnapshotDate: "2026-03-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: -800, BoughtPrice: 0, IsCash: true, IsLiability: true},
+			{SnapshotDate: "2026-01-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: dec(10000), BoughtPrice: dec(9000)},
+			{SnapshotDate: "2026-01-12", AssetName: "Wallet", AssetTypeName: "Cash", CurrentPrice: dec(2000), BoughtPrice: dec(500), IsCash: true},
+			{SnapshotDate: "2026-01-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: dec(-1000), BoughtPrice: dec(0), IsCash: true, IsLiability: true},
+			{SnapshotDate: "2026-02-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: dec(11000), BoughtPrice: dec(9500)},
+			{SnapshotDate: "2026-02-12", AssetName: "Wallet", AssetTypeName: "Cash", CurrentPrice: dec(2400), BoughtPrice: dec(500), IsCash: true},
+			{SnapshotDate: "2026-02-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: dec(-900), BoughtPrice: dec(0), IsCash: true, IsLiability: true},
+			{SnapshotDate: "2026-03-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: dec(12500), BoughtPrice: dec(10000)},
+			{SnapshotDate: "2026-03-12", AssetName: "Wallet", AssetTypeName: "Cash", CurrentPrice: dec(2600), BoughtPrice: dec(500), IsCash: true},
+			{SnapshotDate: "2026-03-12", AssetName: "Visa", AssetTypeName: "Credit Card", CurrentPrice: dec(-800), BoughtPrice: dec(0), IsCash: true, IsLiability: true},
 		},
 	}, goalReaderStub{
 		goals: []dto.GoalRow{
-			{ID: 1, Name: "First Million", TargetAmount: 20000},
-			{ID: 2, Name: "Trip Fund", TargetAmount: 15000, TargetDate: "2026-04-30"},
+			{ID: 1, Name: "First Million", TargetAmount: dec(20000)},
+			{ID: 2, Name: "Trip Fund", TargetAmount: dec(15000), TargetDate: "2026-04-30"},
 		},
 	})
 
@@ -101,11 +102,11 @@ func TestProgressService_GetPageBuildsTrendSummaryProjectionAllocationAndGoalEst
 	assertProgressFloatEqual(t, 2600, page.ProjectionPoints[0].TotalCash)
 	assertProgressFloatEqual(t, 12500, page.ProjectionPoints[0].TotalNonCash)
 	assertProgressFloatEqual(t, -800, page.ProjectionPoints[0].Liabilities)
-	firstProjectionGain := page.ProjectionPoints[1].TotalCurrent - page.ProjectionPoints[0].TotalCurrent
-	secondProjectionGain := page.ProjectionPoints[2].TotalCurrent - page.ProjectionPoints[1].TotalCurrent
-	if secondProjectionGain <= firstProjectionGain {
+	firstProjectionGain := page.ProjectionPoints[1].TotalCurrent.Sub(page.ProjectionPoints[0].TotalCurrent)
+	secondProjectionGain := page.ProjectionPoints[2].TotalCurrent.Sub(page.ProjectionPoints[1].TotalCurrent)
+	if secondProjectionGain.LessThanOrEqual(firstProjectionGain) {
 		t.Fatalf(
-			"expected compounded projection gains, got first=%f second=%f",
+			"expected compounded projection gains, got first=%s second=%s",
 			firstProjectionGain,
 			secondProjectionGain,
 		)
@@ -116,7 +117,7 @@ func TestProgressService_GetPageBuildsTrendSummaryProjectionAllocationAndGoalEst
 	if page.AllocationSnapshots[2].ByAssetType[0].Name != "Investment" {
 		t.Fatalf("expected investment to be largest allocation, got %+v", page.AllocationSnapshots[2].ByAssetType)
 	}
-	if page.AllocationSnapshots[2].ByCategory[2].Name != "Liabilities" || page.AllocationSnapshots[2].ByCategory[2].Value >= 0 {
+	if page.AllocationSnapshots[2].ByCategory[2].Name != "Liabilities" || !page.AllocationSnapshots[2].ByCategory[2].Value.IsNegative() {
 		t.Fatalf("expected liabilities category to stay negative, got %+v", page.AllocationSnapshots[2].ByCategory)
 	}
 	if len(page.GoalEstimates) != 2 {
@@ -142,7 +143,7 @@ func TestBuildProgressAggregatesKeepsSameNamedAssetsSeparateAcrossTypes(t *testi
 			SnapshotDate:  "2026-04-12",
 			AssetName:     "Reserve",
 			AssetTypeName: "Cash",
-			CurrentPrice:  1000,
+			CurrentPrice:  dec(1000),
 			IsCash:        true,
 		},
 		{
@@ -150,8 +151,8 @@ func TestBuildProgressAggregatesKeepsSameNamedAssetsSeparateAcrossTypes(t *testi
 			SnapshotDate:  "2026-04-12",
 			AssetName:     "Reserve",
 			AssetTypeName: "Investment",
-			BoughtPrice:   1500,
-			CurrentPrice:  2000,
+			BoughtPrice:   dec(1500),
+			CurrentPrice:  dec(2000),
 		},
 	})
 
@@ -171,14 +172,14 @@ func TestProgressService_GetPageMarksGoalsAsReachedOrNeedsPositiveTrend(t *testi
 	service := NewProgressService(progressReaderStub{
 		dates: []string{"2026-01-12", "2026-02-12", "2026-03-12"},
 		rows: []dto.ProgressSnapshotItem{
-			{SnapshotDate: "2026-01-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: 10000, BoughtPrice: 9000},
-			{SnapshotDate: "2026-02-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: 9500, BoughtPrice: 9000},
-			{SnapshotDate: "2026-03-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: 9000, BoughtPrice: 9000},
+			{SnapshotDate: "2026-01-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: dec(10000), BoughtPrice: dec(9000)},
+			{SnapshotDate: "2026-02-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: dec(9500), BoughtPrice: dec(9000)},
+			{SnapshotDate: "2026-03-12", AssetName: "ETF", AssetTypeName: "Investment", CurrentPrice: dec(9000), BoughtPrice: dec(9000)},
 		},
 	}, goalReaderStub{
 		goals: []dto.GoalRow{
-			{ID: 1, Name: "Already There", TargetAmount: 8000},
-			{ID: 2, Name: "Too Far", TargetAmount: 12000},
+			{ID: 1, Name: "Already There", TargetAmount: dec(8000)},
+			{ID: 2, Name: "Too Far", TargetAmount: dec(12000)},
 		},
 	})
 
@@ -208,41 +209,41 @@ func TestBuildProjectionPointsUsesMedianLiabilityDeltaAndClampsToZero(t *testing
 		{
 			SnapshotDate: "2026-01-12",
 			ByCategory: []dto.AllocationSlice{
-				{Name: "Cash", Value: 1000},
-				{Name: "Non Cash Asset", Value: 10000},
-				{Name: "Liabilities", Value: -3000},
+				{Name: "Cash", Value: dec(1000)},
+				{Name: "Non Cash Asset", Value: dec(10000)},
+				{Name: "Liabilities", Value: dec(-3000)},
 			},
 		},
 		{
 			SnapshotDate: "2026-02-12",
 			ByCategory: []dto.AllocationSlice{
-				{Name: "Cash", Value: 1100},
-				{Name: "Non Cash Asset", Value: 10200},
-				{Name: "Liabilities", Value: -2800},
+				{Name: "Cash", Value: dec(1100)},
+				{Name: "Non Cash Asset", Value: dec(10200)},
+				{Name: "Liabilities", Value: dec(-2800)},
 			},
 		},
 		{
 			SnapshotDate: "2026-03-12",
 			ByCategory: []dto.AllocationSlice{
-				{Name: "Cash", Value: 1200},
-				{Name: "Non Cash Asset", Value: 10400},
-				{Name: "Liabilities", Value: -10800},
+				{Name: "Cash", Value: dec(1200)},
+				{Name: "Non Cash Asset", Value: dec(10400)},
+				{Name: "Liabilities", Value: dec(-10800)},
 			},
 		},
 		{
 			SnapshotDate: "2026-04-12",
 			ByCategory: []dto.AllocationSlice{
-				{Name: "Cash", Value: 1300},
-				{Name: "Non Cash Asset", Value: 10600},
-				{Name: "Liabilities", Value: -400},
+				{Name: "Cash", Value: dec(1300)},
+				{Name: "Non Cash Asset", Value: dec(10600)},
+				{Name: "Liabilities", Value: dec(-400)},
 			},
 		},
 		{
 			SnapshotDate: "2026-05-12",
 			ByCategory: []dto.AllocationSlice{
-				{Name: "Cash", Value: 1400},
-				{Name: "Non Cash Asset", Value: 10800},
-				{Name: "Liabilities", Value: -200},
+				{Name: "Cash", Value: dec(1400)},
+				{Name: "Non Cash Asset", Value: dec(10800)},
+				{Name: "Liabilities", Value: dec(-200)},
 			},
 		},
 	})
@@ -252,24 +253,24 @@ func TestBuildProjectionPointsUsesMedianLiabilityDeltaAndClampsToZero(t *testing
 	}
 
 	assertProgressFloatEqual(t, -200, projectionPoints[0].Liabilities)
-	if projectionPoints[1].Liabilities > 0 || projectionPoints[1].Liabilities < -1 {
-		t.Fatalf("expected first projected liability to be nearly paid off, got %f", projectionPoints[1].Liabilities)
+	if projectionPoints[1].Liabilities.IsPositive() || projectionPoints[1].Liabilities.LessThan(dec(-1)) {
+		t.Fatalf("expected first projected liability to be nearly paid off, got %s", projectionPoints[1].Liabilities)
 	}
 	assertProgressFloatEqual(t, 0, projectionPoints[2].Liabilities)
 	assertProgressFloatEqual(t, 0, projectionPoints[3].Liabilities)
 }
 
-func assertProgressFloatEqual(t *testing.T, want float64, got float64) {
+func assertProgressFloatEqual(t *testing.T, want float64, got decimal.Decimal) {
 	t.Helper()
-	if want != got {
-		t.Fatalf("expected %f, got %f", want, got)
+	if !decimal.NewFromFloat(want).Equal(got) {
+		t.Fatalf("expected %f, got %s", want, got)
 	}
 }
 
-func assertProgressFloatInDelta(t *testing.T, want float64, got float64) {
+func assertProgressFloatInDelta(t *testing.T, want float64, got decimal.Decimal) {
 	t.Helper()
-	const delta = 0.00001
-	if got < want-delta || got > want+delta {
-		t.Fatalf("expected %f +/- %f, got %f", want, delta, got)
+	delta := decimal.NewFromFloat(0.00001)
+	if got.Sub(decimal.NewFromFloat(want)).Abs().GreaterThan(delta) {
+		t.Fatalf("expected %f +/- %s, got %s", want, delta, got)
 	}
 }

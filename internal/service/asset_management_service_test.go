@@ -73,7 +73,7 @@ func TestAssetManagementService_UpdateAssetPreservesDuplicateAssetNameError(t *t
 		Broker:        "SCB",
 		IsCash:        true,
 		IsActive:      true,
-		AutoIncrement: 0,
+		AutoIncrement: dec(0),
 	})
 	if !errors.Is(err, recorderr.ErrAssetNameExists) {
 		t.Fatalf("expected duplicate asset name error, got %v", err)

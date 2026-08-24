@@ -4,6 +4,7 @@ go 1.27
 
 require (
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/viper v1.21.0
 	github.com/wailsapp/wails/v2 v2.15.0
 	modernc.org/sqlite v1.57.0

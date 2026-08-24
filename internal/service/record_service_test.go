@@ -8,6 +8,7 @@ import (
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
 	"github.com/guitarpawat/worthly-tracker/internal/recorderr"
+	"github.com/shopspring/decimal"
 )
 
 func TestRecordService_BuildHomePageReturnsOnboardingWhenCurrentSnapshotIsMissing(t *testing.T) {
@@ -53,6 +54,39 @@ func TestRecordService_BuildHomePageReturnsOnboardingWhenCurrentSnapshotIsMissin
 	}
 }
 
+func TestRecordService_BuildHomePageUsesExactDecimalArithmetic(t *testing.T) {
+	t.Parallel()
+
+	page := (&RecordService{}).BuildHomePage(&dto.Snapshot{
+		ID:         1,
+		RecordDate: time.Date(2026, time.April, 12, 0, 0, 0, 0, time.UTC),
+		Items: []dto.SnapshotItem{
+			{
+				AssetID:      1,
+				AssetName:    "First",
+				BoughtPrice:  decimal.RequireFromString("0.10"),
+				CurrentPrice: decimal.RequireFromString("0.20"),
+			},
+			{
+				AssetID:      2,
+				AssetName:    "Second",
+				BoughtPrice:  decimal.RequireFromString("0.20"),
+				CurrentPrice: decimal.RequireFromString("0.30"),
+			},
+		},
+	}, nil)
+
+	if !page.Summary.TotalBought.Equal(decimal.RequireFromString("0.30")) {
+		t.Fatalf("expected exact bought total 0.30, got %s", page.Summary.TotalBought)
+	}
+	if !page.Summary.TotalCurrent.Equal(decimal.RequireFromString("0.50")) {
+		t.Fatalf("expected exact current total 0.50, got %s", page.Summary.TotalCurrent)
+	}
+	if !page.Summary.TotalProfit.Equal(decimal.RequireFromString("0.20")) {
+		t.Fatalf("expected exact profit total 0.20, got %s", page.Summary.TotalProfit)
+	}
+}
+
 func TestRecordService_BuildHomePageCalculatesGroupedSummaryAndProfitRules(t *testing.T) {
 	t.Parallel()
 
@@ -68,8 +102,8 @@ func TestRecordService_BuildHomePageCalculatesGroupedSummaryAndProfitRules(t *te
 				AssetOrdering:     2,
 				Broker:            "SCB",
 				IsCash:            true,
-				BoughtPrice:       0,
-				CurrentPrice:      11000,
+				BoughtPrice:       dec(0),
+				CurrentPrice:      dec(11000),
 				Remarks:           "Payroll",
 			},
 			{
@@ -79,8 +113,8 @@ func TestRecordService_BuildHomePageCalculatesGroupedSummaryAndProfitRules(t *te
 				AssetTypeOrdering: 2,
 				AssetOrdering:     2,
 				Broker:            "KKP",
-				BoughtPrice:       15000,
-				CurrentPrice:      18000,
+				BoughtPrice:       dec(15000),
+				CurrentPrice:      dec(18000),
 				Remarks:           "Long term",
 			},
 			{
@@ -90,8 +124,8 @@ func TestRecordService_BuildHomePageCalculatesGroupedSummaryAndProfitRules(t *te
 				AssetTypeOrdering: 2,
 				AssetOrdering:     1,
 				Broker:            "IBKR",
-				BoughtPrice:       0,
-				CurrentPrice:      5000,
+				BoughtPrice:       dec(0),
+				CurrentPrice:      dec(5000),
 				Remarks:           "Bonus buy",
 			},
 		},
@@ -136,11 +170,11 @@ func TestRecordService_BuildHomePageCalculatesGroupedSummaryAndProfitRules(t *te
 	if cashRow.IsLiability {
 		t.Fatal("expected cash row not to be liability")
 	}
-	if cashRow.Profit != 0 {
-		t.Fatalf("expected zero cash profit, got %f", cashRow.Profit)
+	if !cashRow.Profit.IsZero() {
+		t.Fatalf("expected zero cash profit, got %s", cashRow.Profit)
 	}
-	if cashRow.ProfitPercent != 0 {
-		t.Fatalf("expected zero cash profit percent, got %f", cashRow.ProfitPercent)
+	if !cashRow.ProfitPercent.IsZero() {
+		t.Fatalf("expected zero cash profit percent, got %s", cashRow.ProfitPercent)
 	}
 
 	investmentRow := page.Groups[1].Rows[0]
@@ -150,11 +184,11 @@ func TestRecordService_BuildHomePageCalculatesGroupedSummaryAndProfitRules(t *te
 	if investmentRow.IsCash {
 		t.Fatal("expected investment row not to be cash")
 	}
-	if investmentRow.Profit != 5000 {
-		t.Fatalf("expected profit 5000, got %f", investmentRow.Profit)
+	if !investmentRow.Profit.Equal(dec(5000)) {
+		t.Fatalf("expected profit 5000, got %s", investmentRow.Profit)
 	}
-	if investmentRow.ProfitPercent != 0 {
-		t.Fatalf("expected zero profit percent when bought price is zero, got %f", investmentRow.ProfitPercent)
+	if !investmentRow.ProfitPercent.IsZero() {
+		t.Fatalf("expected zero profit percent when bought price is zero, got %s", investmentRow.ProfitPercent)
 	}
 
 	assertFloatEqual(t, 15000, page.Summary.TotalBought)
@@ -185,7 +219,7 @@ func TestRecordService_BuildHomePagePreservesLiabilityFlagsOnRows(t *testing.T) 
 				Broker:            "KBank",
 				IsCash:            true,
 				IsLiability:       true,
-				CurrentPrice:      -2500,
+				CurrentPrice:      dec(-2500),
 			},
 		},
 	}
@@ -222,8 +256,8 @@ func TestRecordService_BuildHomePageCalculatesComparisonUsingOverlappingAssetsOn
 				AssetTypeOrdering: 1,
 				AssetOrdering:     1,
 				Broker:            "KKP",
-				BoughtPrice:       12000,
-				CurrentPrice:      15000,
+				BoughtPrice:       dec(12000),
+				CurrentPrice:      dec(15000),
 			},
 			{
 				AssetID:           2,
@@ -233,8 +267,8 @@ func TestRecordService_BuildHomePageCalculatesComparisonUsingOverlappingAssetsOn
 				AssetOrdering:     1,
 				Broker:            "SCB",
 				IsCash:            true,
-				BoughtPrice:       0,
-				CurrentPrice:      7000,
+				BoughtPrice:       dec(0),
+				CurrentPrice:      dec(7000),
 			},
 			{
 				AssetID:           3,
@@ -243,8 +277,8 @@ func TestRecordService_BuildHomePageCalculatesComparisonUsingOverlappingAssetsOn
 				AssetTypeOrdering: 1,
 				AssetOrdering:     2,
 				Broker:            "IBKR",
-				BoughtPrice:       3000,
-				CurrentPrice:      3500,
+				BoughtPrice:       dec(3000),
+				CurrentPrice:      dec(3500),
 			},
 		},
 	}
@@ -258,8 +292,8 @@ func TestRecordService_BuildHomePageCalculatesComparisonUsingOverlappingAssetsOn
 				AssetTypeOrdering: 1,
 				AssetOrdering:     1,
 				Broker:            "KKP",
-				BoughtPrice:       10000,
-				CurrentPrice:      14000,
+				BoughtPrice:       dec(10000),
+				CurrentPrice:      dec(14000),
 			},
 			{
 				AssetID:           2,
@@ -269,8 +303,8 @@ func TestRecordService_BuildHomePageCalculatesComparisonUsingOverlappingAssetsOn
 				AssetOrdering:     1,
 				Broker:            "SCB",
 				IsCash:            true,
-				BoughtPrice:       0,
-				CurrentPrice:      6000,
+				BoughtPrice:       dec(0),
+				CurrentPrice:      dec(6000),
 			},
 			{
 				AssetID:           99,
@@ -279,8 +313,8 @@ func TestRecordService_BuildHomePageCalculatesComparisonUsingOverlappingAssetsOn
 				AssetTypeOrdering: 1,
 				AssetOrdering:     3,
 				Broker:            "Old Broker",
-				BoughtPrice:       8000,
-				CurrentPrice:      7500,
+				BoughtPrice:       dec(8000),
+				CurrentPrice:      dec(7500),
 			},
 		},
 	}
@@ -313,13 +347,13 @@ func TestRecordService_GetHomePageSetsNavigationFlagsFromSnapshotOffset(t *testi
 			0: {
 				RecordDate: time.Date(2026, time.April, 12, 0, 0, 0, 0, time.UTC),
 				Items: []dto.SnapshotItem{
-					{AssetID: 1, AssetName: "ETF", AssetTypeName: "Investment", BoughtPrice: 10, CurrentPrice: 12},
+					{AssetID: 1, AssetName: "ETF", AssetTypeName: "Investment", BoughtPrice: dec(10), CurrentPrice: dec(12)},
 				},
 			},
 			1: {
 				RecordDate: time.Date(2026, time.March, 12, 0, 0, 0, 0, time.UTC),
 				Items: []dto.SnapshotItem{
-					{AssetID: 1, AssetName: "ETF", AssetTypeName: "Investment", BoughtPrice: 9, CurrentPrice: 11},
+					{AssetID: 1, AssetName: "ETF", AssetTypeName: "Investment", BoughtPrice: dec(9), CurrentPrice: dec(11)},
 				},
 			},
 		},
@@ -358,7 +392,7 @@ func TestRecordService_GetEditSnapshotPageBuildsGroupedRowsAndAvailableAssets(t 
 					Broker:            "SCB",
 					IsCash:            true,
 					IsActive:          true,
-					CurrentPrice:      5000,
+					CurrentPrice:      dec(5000),
 				},
 				{
 					AssetID:           1,
@@ -369,8 +403,8 @@ func TestRecordService_GetEditSnapshotPageBuildsGroupedRowsAndAvailableAssets(t 
 					Broker:            "KKP",
 					IsCash:            false,
 					IsActive:          true,
-					BoughtPrice:       12000,
-					CurrentPrice:      15000,
+					BoughtPrice:       dec(12000),
+					CurrentPrice:      dec(15000),
 					Remarks:           "Core",
 				},
 			},
@@ -427,7 +461,7 @@ func TestRecordService_GetNewSnapshotPageBuildsNewModeDraft(t *testing.T) {
 					Broker:            "SCB",
 					IsCash:            true,
 					IsActive:          true,
-					CurrentPrice:      5000,
+					CurrentPrice:      dec(5000),
 				},
 				{
 					AssetID:           1,
@@ -438,8 +472,8 @@ func TestRecordService_GetNewSnapshotPageBuildsNewModeDraft(t *testing.T) {
 					Broker:            "KKP",
 					IsCash:            false,
 					IsActive:          true,
-					BoughtPrice:       12500,
-					CurrentPrice:      15000,
+					BoughtPrice:       dec(12500),
+					CurrentPrice:      dec(15000),
 					Remarks:           "Core",
 				},
 			},
@@ -510,7 +544,7 @@ func TestRecordService_SaveSnapshotReturnsRepositoryResult(t *testing.T) {
 		SnapshotID:   1,
 		SnapshotDate: "2026-04-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 10, CurrentPrice: 12},
+			{AssetID: 1, BoughtPrice: dec(10), CurrentPrice: dec(12)},
 		},
 	})
 	if err != nil {
@@ -544,7 +578,7 @@ func TestRecordService_CreateSnapshotReturnsRepositoryResult(t *testing.T) {
 	result, err := service.CreateSnapshot(context.Background(), dto.CreateSnapshotInput{
 		SnapshotDate: "2026-04-12",
 		Items: []dto.SaveSnapshotItemInput{
-			{AssetID: 1, BoughtPrice: 10, CurrentPrice: 12},
+			{AssetID: 1, BoughtPrice: dec(10), CurrentPrice: dec(12)},
 		},
 	})
 	if err != nil {
@@ -580,22 +614,18 @@ func TestRecordService_DeleteSnapshotReturnsRepositoryResult(t *testing.T) {
 	}
 }
 
-func assertFloatEqual(t *testing.T, want float64, got float64) {
+func assertFloatEqual(t *testing.T, want float64, got decimal.Decimal) {
 	t.Helper()
-	if want != got {
-		t.Fatalf("expected %f, got %f", want, got)
+	if !decimal.NewFromFloat(want).Equal(got) {
+		t.Fatalf("expected %f, got %s", want, got)
 	}
 }
 
-func assertFloatInDelta(t *testing.T, want float64, got float64) {
+func assertFloatInDelta(t *testing.T, want float64, got decimal.Decimal) {
 	t.Helper()
-	const tolerance = 0.0000001
-	delta := want - got
-	if delta < 0 {
-		delta = -delta
-	}
-	if delta > tolerance {
-		t.Fatalf("expected %f, got %f", want, got)
+	tolerance := decimal.NewFromFloat(0.0000001)
+	if got.Sub(decimal.NewFromFloat(want)).Abs().GreaterThan(tolerance) {
+		t.Fatalf("expected %f, got %s", want, got)
 	}
 }
 

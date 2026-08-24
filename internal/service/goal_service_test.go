@@ -34,7 +34,7 @@ func TestGoalService_UpdateGoalPreservesNotFoundError(t *testing.T) {
 
 	service := NewGoalService(goalMutatorStub{updateErr: recorderr.ErrGoalNotFound})
 
-	_, err := service.UpdateGoal(context.Background(), dto.UpdateGoalInput{ID: 1, Name: "Goal", TargetAmount: 1000})
+	_, err := service.UpdateGoal(context.Background(), dto.UpdateGoalInput{ID: 1, Name: "Goal", TargetAmount: dec(1000)})
 	if !errors.Is(err, recorderr.ErrGoalNotFound) {
 		t.Fatalf("expected ErrGoalNotFound, got %v", err)
 	}

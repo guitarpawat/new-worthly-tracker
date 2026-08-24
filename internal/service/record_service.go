@@ -10,6 +10,7 @@ import (
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
 	"github.com/guitarpawat/worthly-tracker/internal/recorderr"
+	"github.com/shopspring/decimal"
 )
 
 type SnapshotReader interface {
@@ -199,13 +200,13 @@ func (*RecordService) BuildHomePage(
 	previousSummary := calculateHomeSummary(previousOverlap)
 	page.Comparison = &dto.HomeSummaryDelta{
 		PreviousSnapshotDate: previous.RecordDate,
-		BoughtChange:         currentSummary.TotalBought - previousSummary.TotalBought,
-		CurrentChange:        currentSummary.TotalCurrent - previousSummary.TotalCurrent,
-		ProfitChange:         currentSummary.TotalProfit - previousSummary.TotalProfit,
-		ProfitRateChange:     currentSummary.TotalProfitRate - previousSummary.TotalProfitRate,
-		CashChange:           currentSummary.TotalCash - previousSummary.TotalCash,
-		NonCashChange:        currentSummary.TotalNonCash - previousSummary.TotalNonCash,
-		CashRatioChange:      currentSummary.CashRatio - previousSummary.CashRatio,
+		BoughtChange:         currentSummary.TotalBought.Sub(previousSummary.TotalBought),
+		CurrentChange:        currentSummary.TotalCurrent.Sub(previousSummary.TotalCurrent),
+		ProfitChange:         currentSummary.TotalProfit.Sub(previousSummary.TotalProfit),
+		ProfitRateChange:     currentSummary.TotalProfitRate.Sub(previousSummary.TotalProfitRate),
+		CashChange:           currentSummary.TotalCash.Sub(previousSummary.TotalCash),
+		NonCashChange:        currentSummary.TotalNonCash.Sub(previousSummary.TotalNonCash),
+		CashRatioChange:      currentSummary.CashRatio.Sub(previousSummary.CashRatio),
 	}
 
 	return page
@@ -262,7 +263,7 @@ func buildHomeGroups(items []dto.SnapshotItem) []dto.HomeAssetGroup {
 
 func updateHomeGroupSummary(summary *dto.HomeAssetGroupSummary, item dto.SnapshotItem) {
 	summary.AssetCount += 1
-	summary.TotalCurrent += item.CurrentPrice
+	summary.TotalCurrent = summary.TotalCurrent.Add(item.CurrentPrice)
 }
 
 func buildSnapshotFormPage(mode string, snapshot *dto.EditableSnapshot) dto.EditSnapshotPage {
@@ -366,20 +367,20 @@ func buildAvailableAssetGroups(items []dto.EditableAssetOption) []dto.EditAssetO
 
 func calculateHomeSummary(items []dto.SnapshotItem) dto.HomeSummary {
 	summary := dto.HomeSummary{}
-	var investedBought float64
+	investedBought := decimal.Zero
 
 	for _, item := range items {
-		summary.TotalCurrent += item.CurrentPrice
+		summary.TotalCurrent = summary.TotalCurrent.Add(item.CurrentPrice)
 
 		if item.IsCash {
-			summary.TotalCash += item.CurrentPrice
+			summary.TotalCash = summary.TotalCash.Add(item.CurrentPrice)
 			continue
 		}
 
-		summary.TotalBought += item.BoughtPrice
-		summary.TotalNonCash += item.CurrentPrice
-		summary.TotalProfit += calculateProfit(item)
-		investedBought += item.BoughtPrice
+		summary.TotalBought = summary.TotalBought.Add(item.BoughtPrice)
+		summary.TotalNonCash = summary.TotalNonCash.Add(item.CurrentPrice)
+		summary.TotalProfit = summary.TotalProfit.Add(calculateProfit(item))
+		investedBought = investedBought.Add(item.BoughtPrice)
 	}
 
 	summary.TotalProfitRate = safeDivide(summary.TotalProfit, investedBought)
@@ -412,26 +413,26 @@ func overlappingItems(
 	return currentOverlap, previousOverlap
 }
 
-func calculateProfit(item dto.SnapshotItem) float64 {
+func calculateProfit(item dto.SnapshotItem) decimal.Decimal {
 	if item.IsCash {
-		return 0
+		return decimal.Zero
 	}
 
-	return item.CurrentPrice - item.BoughtPrice
+	return item.CurrentPrice.Sub(item.BoughtPrice)
 }
 
-func calculateProfitPercent(item dto.SnapshotItem) float64 {
+func calculateProfitPercent(item dto.SnapshotItem) decimal.Decimal {
 	if item.IsCash {
-		return 0
+		return decimal.Zero
 	}
 
 	return safeDivide(calculateProfit(item), item.BoughtPrice)
 }
 
-func safeDivide(numerator float64, denominator float64) float64 {
-	if denominator == 0 {
-		return 0
+func safeDivide(numerator decimal.Decimal, denominator decimal.Decimal) decimal.Decimal {
+	if denominator.IsZero() {
+		return decimal.Zero
 	}
 
-	return numerator / denominator
+	return numerator.Div(denominator)
 }
