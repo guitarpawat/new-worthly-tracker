@@ -124,7 +124,7 @@
             callbacks: {
               label(context) {
                 const value = Number(context.parsed.y ?? context.parsed);
-                return `${context.dataset.label}: ${formatChartTooltipValue(value, "category_breakdown")}`;
+                return `${context.dataset.label}: ${formatChartTooltipValue(value, chartMode)}`;
               },
             },
           },

@@ -46,6 +46,7 @@ func (r *ProgressRepository) ListSnapshotItemsInRange(
 	if err := r.db.SelectContext(ctx, &rows, `
 		SELECT
 			rs.id AS snapshot_id,
+			a.id AS asset_id,
 			CAST(rs.record_date AS TEXT) AS snapshot_date,
 			a.name AS asset_name,
 			COALESCE(at.name, '') AS asset_type_name,

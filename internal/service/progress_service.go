@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strconv"
 	"time"
 
 	"github.com/guitarpawat/worthly-tracker/internal/dto"
@@ -127,6 +128,7 @@ func buildProgressAggregates(rows []dto.ProgressSnapshotItem) ([]dto.ProgressPoi
 		current.point.TotalCurrent += row.CurrentPrice
 		if !row.IsCash {
 			current.point.TotalBought += row.BoughtPrice
+			current.point.TotalProfit += row.CurrentPrice - row.BoughtPrice
 		}
 		if row.IsCash {
 			current.point.TotalCash += row.CurrentPrice
@@ -138,22 +140,22 @@ func buildProgressAggregates(rows []dto.ProgressSnapshotItem) ([]dto.ProgressPoi
 		if assetTypeName == "" {
 			assetTypeName = "Uncategorized"
 		}
-		accumulateAllocationSlice(&current.byAssetType, current.typeIndex, assetTypeName, row.CurrentPrice)
-		accumulateAllocationSlice(&current.byAsset, current.assetIndex, row.AssetName, row.CurrentPrice)
+		accumulateAllocationSlice(&current.byAssetType, current.typeIndex, assetTypeName, assetTypeName, row.CurrentPrice)
+		assetKey := progressAssetKey(row, assetTypeName)
+		accumulateAllocationSlice(&current.byAsset, current.assetIndex, assetKey, row.AssetName, row.CurrentPrice)
 		switch {
 		case row.IsLiability:
-			accumulateAllocationSlice(&current.byCategory, current.categoryMap, "Liabilities", row.CurrentPrice)
+			accumulateAllocationSlice(&current.byCategory, current.categoryMap, "Liabilities", "Liabilities", row.CurrentPrice)
 		case row.IsCash:
-			accumulateAllocationSlice(&current.byCategory, current.categoryMap, "Cash", row.CurrentPrice)
+			accumulateAllocationSlice(&current.byCategory, current.categoryMap, "Cash", "Cash", row.CurrentPrice)
 		default:
-			accumulateAllocationSlice(&current.byCategory, current.categoryMap, "Non Cash Asset", row.CurrentPrice)
+			accumulateAllocationSlice(&current.byCategory, current.categoryMap, "Non Cash Asset", "Non Cash Asset", row.CurrentPrice)
 		}
 	}
 
 	trendPoints := make([]dto.ProgressPoint, 0, len(aggregates))
 	allocationSnapshots := make([]dto.AllocationSnapshot, 0, len(aggregates))
 	for _, current := range aggregates {
-		current.point.TotalProfit = current.point.TotalCurrent - current.point.TotalBought
 		if current.point.TotalBought != 0 {
 			current.point.ProfitRate = current.point.TotalProfit / current.point.TotalBought
 		}
@@ -173,11 +175,24 @@ func buildProgressAggregates(rows []dto.ProgressSnapshotItem) ([]dto.ProgressPoi
 	return trendPoints, allocationSnapshots
 }
 
-func accumulateAllocationSlice(target *[]dto.AllocationSlice, indexMap map[string]int, name string, value float64) {
-	index, found := indexMap[name]
+func progressAssetKey(row dto.ProgressSnapshotItem, assetTypeName string) string {
+	if row.AssetID > 0 {
+		return strconv.FormatInt(row.AssetID, 10)
+	}
+	return assetTypeName + "\x00" + row.AssetName
+}
+
+func accumulateAllocationSlice(
+	target *[]dto.AllocationSlice,
+	indexMap map[string]int,
+	key string,
+	name string,
+	value float64,
+) {
+	index, found := indexMap[key]
 	if !found {
 		index = len(*target)
-		indexMap[name] = index
+		indexMap[key] = index
 		*target = append(*target, dto.AllocationSlice{Name: name, Value: value})
 		return
 	}

@@ -51,7 +51,6 @@ func (r *RecordSnapshotRepository) SaveSnapshot(
 	if err != nil {
 		return dto.SaveSnapshotResult{}, err
 	}
-	wasLatestSnapshot := latestSnapshotID == input.SnapshotID
 
 	var duplicateExists bool
 	if err := tx.GetContext(ctx, &duplicateExists, `
@@ -116,8 +115,6 @@ func (r *RecordSnapshotRepository) SaveSnapshot(
 		return dto.SaveSnapshotResult{}, err
 	}
 
-	removedAssetIDs := diffAssetIDs(existingAssetIDs, assetIDs)
-
 	for _, item := range input.Items {
 		meta := assetMetaByID[item.AssetID]
 		boughtPrice := item.BoughtPrice
@@ -159,15 +156,22 @@ func (r *RecordSnapshotRepository) SaveSnapshot(
 		}
 	}
 
-	if wasLatestSnapshot {
-		willRemainLatest, err := r.willSnapshotBeLatest(ctx, tx, input.SnapshotID, input.SnapshotDate)
-		if err != nil {
-			return dto.SaveSnapshotResult{}, err
-		}
-		if willRemainLatest {
-			if err := r.deactivateAssets(ctx, tx, removedAssetIDs); err != nil {
+	willBeLatest, err := r.willSnapshotBeLatest(ctx, tx, input.SnapshotID, input.SnapshotDate)
+	if err != nil {
+		return dto.SaveSnapshotResult{}, err
+	}
+	if willBeLatest {
+		previousLatestAssetIDs := existingAssetIDs
+		if latestSnapshotID != input.SnapshotID && latestSnapshotID > 0 {
+			previousLatestAssetIDs, err = r.listSnapshotAssetIDs(ctx, tx, latestSnapshotID)
+			if err != nil {
 				return dto.SaveSnapshotResult{}, err
 			}
+		}
+
+		removedAssetIDs := diffAssetIDs(previousLatestAssetIDs, assetIDs)
+		if err := r.deactivateAssets(ctx, tx, removedAssetIDs); err != nil {
+			return dto.SaveSnapshotResult{}, err
 		}
 	}
 

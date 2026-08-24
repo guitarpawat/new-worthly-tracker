@@ -60,6 +60,10 @@ test("buildTrendChartConfig keeps projection only for total net worth mode", () 
     dataset: { label: "Projection" },
     parsed: { y: 12000 },
   }), "Projection: THB 12,000.00");
+  assert.equal(profitConfig.options.plugins.tooltip.callbacks.label({
+    dataset: { label: "% Profit" },
+    parsed: { y: 0.11 },
+  }), "% Profit: 11.00%");
 });
 
 test("buildTrendChartConfig builds category breakdown series with projected trend lines", () => {

@@ -88,6 +88,57 @@ func TestApplyMigrations_ConvertsBooleanAutoIncrementSchemaToNumericAmount(t *te
 	if joinedRows != 2 {
 		t.Fatalf("expected 2 joined record items after migration, got %d", joinedRows)
 	}
+
+	var foreignKeysEnabled int
+	if err := database.GetContext(ctx, &foreignKeysEnabled, `PRAGMA foreign_keys`); err != nil {
+		t.Fatalf("read foreign key state after migration: %v", err)
+	}
+	if foreignKeysEnabled != 1 {
+		t.Fatalf("expected foreign keys restored after migration, got %d", foreignKeysEnabled)
+	}
+}
+
+func TestApplyMigrations_RollsBackSchemaWhenVersionTrackingFails(t *testing.T) {
+	t.Parallel()
+
+	database, err := Open(SQLiteConfig{Path: ":memory:"})
+	if err != nil {
+		t.Fatalf("open sqlite: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = database.Close()
+	})
+
+	ctx := context.Background()
+	if _, err := database.ExecContext(ctx, `
+		CREATE TABLE schema_migrations (
+			version TEXT PRIMARY KEY CHECK (version = 'allowed')
+		)
+	`); err != nil {
+		t.Fatalf("create constrained migration table: %v", err)
+	}
+
+	migrationFS := fstest.MapFS{
+		"migrations/0001_rejected.up.sql": &fstest.MapFile{
+			Data: []byte("BEGIN; CREATE TABLE should_rollback (id INTEGER PRIMARY KEY); COMMIT;"),
+		},
+	}
+	if err := ApplyMigrations(ctx, database, migrationFS); err == nil {
+		t.Fatal("expected migration tracking failure")
+	}
+
+	var tableCount int
+	if err := database.GetContext(ctx, &tableCount, `
+		SELECT COUNT(*)
+		FROM sqlite_master
+		WHERE type = 'table'
+		  AND name = 'should_rollback'
+	`); err != nil {
+		t.Fatalf("check rolled back table: %v", err)
+	}
+	if tableCount != 0 {
+		t.Fatalf("expected migration schema to roll back, found %d table", tableCount)
+	}
 }
 
 func mustBuildMigrationFS(t *testing.T, names ...string) fs.FS {

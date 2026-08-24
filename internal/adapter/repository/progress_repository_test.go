@@ -40,7 +40,7 @@ func TestProgressRepository_ListSnapshotItemsInRangeReturnsOrderedRows(t *testin
 	if len(rows) != 4 {
 		t.Fatalf("expected 4 rows, got %d", len(rows))
 	}
-	if rows[0].SnapshotDate != "2026-03-12" || rows[0].AssetName != "Old Asset" {
+	if rows[0].SnapshotDate != "2026-03-12" || rows[0].AssetID != 3 || rows[0].AssetName != "Old Asset" {
 		t.Fatalf("unexpected first row: %+v", rows[0])
 	}
 	if rows[3].SnapshotDate != "2026-04-12" || rows[3].AssetName != "SET50 ETF" {

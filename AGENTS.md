@@ -231,6 +231,7 @@ Do not delete the user’s DB or logs unless explicitly asked.
 
 - Every schema change needs a migration
 - Keep migrations small
+- Keep up migrations wrapped in `BEGIN;` / `COMMIT;`; the runner folds the version marker into that transaction and handles paired foreign-key pragmas outside it
 - Update tests with any schema change
 - Do not leave the app in a partially migrated state
 
