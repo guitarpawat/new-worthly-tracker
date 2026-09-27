@@ -82,3 +82,65 @@ test("opening and rerendering an editor focuses its form without moving the list
   assert.deepEqual(focusCalls[1], ["previous", { preventScroll: true }]);
   assert.equal(global.scrollY, 850);
 });
+
+test("new asset and asset type pages focus their first field", (t) => {
+  const originalDocument = global.document;
+  const originalState = { ...state };
+  t.after(() => { global.document = originalDocument; Object.assign(state, originalState); });
+  let focused;
+  const inputs = Object.fromEntries(["asset-name-input", "asset-type-name-input"].map((id) => [id, {
+    addEventListener() {}, focus() { focused = id; },
+  }]));
+  global.document = {
+    activeElement: null,
+    getElementById: (id) => id === "app" ? { innerHTML: "" } : inputs[id],
+    querySelectorAll: () => [],
+  };
+  state.assetManagementPage = { Assets: [], AssetTypes: [] };
+  state.assetManagementModal = null;
+  state.assetForm = management.buildEmptyAssetForm(state.assetManagementPage);
+  state.assetTypeForm = management.buildEmptyAssetTypeForm();
+  for (const [view, field] of [["create_asset", "asset-name-input"], ["create_asset_type", "asset-type-name-input"]]) {
+    state.assetManagementView = view;
+    management.renderAssetManagementPage({});
+    assert.equal(focused, field);
+  }
+});
+
+test("asset type name Enter saves, excluding IME, repeats, and modified keys", (t) => {
+  const originalDocument = global.document;
+  t.after(() => { global.document = originalDocument; });
+  let clicks = 0;
+  let prevented = 0;
+  let keydown;
+  global.document = { getElementById: () => ({ click() { clicks++; } }) };
+  management.bindAssetTypeNameSubmit({ addEventListener(type, handler) { keydown = handler; } });
+  keydown({ key: "Enter", preventDefault() { prevented++; } });
+  assert.equal(clicks, 1);
+  assert.equal(prevented, 1);
+  for (const options of [{ key: "Tab" }, { isComposing: true }, { repeat: true }, { ctrlKey: true }, { altKey: true }, { metaKey: true }, { shiftKey: true }]) {
+    keydown({ key: "Enter", preventDefault() { assert.fail("unexpected interception"); }, ...options });
+  }
+  assert.equal(clicks, 1);
+});
+
+test("snapshot creation popups focus their first field and preserve the draft", async (t) => {
+  const modal = require("./js/snapshot_asset_modal.js");
+  const originals = { document: global.document, go: global.go };
+  const originalState = { ...state };
+  t.after(() => { Object.assign(global, originals); Object.assign(state, originalState); });
+  let focused;
+  let renders = 0;
+  const draft = { rows: [{ assetID: 42, currentPrice: "123.45" }] };
+  state.editDraft = draft;
+  state.isTransitioning = false;
+  global.document = { getElementById: (id) => ({ focus() { focused = id; } }) };
+  global.go = { app: { App: { GetHomePage() {}, GetAssetManagementPage: async () => ({ Assets: [], AssetTypes: [] }) } } };
+  for (const [kind, field] of [["asset", "asset-name-input"], ["asset_type", "asset-type-name-input"]]) {
+    await modal.openSnapshotAssetModal(kind, {}, () => { renders++; });
+    assert.equal(focused, field);
+    assert.equal(state.snapshotAssetModal.kind, kind);
+    assert.equal(state.editDraft, draft);
+  }
+  assert.equal(renders, 2);
+});

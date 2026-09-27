@@ -26,7 +26,7 @@ func (a *App) ExportSnapshotCSV(offset int, snapshotID int64) error {
 	}
 	return saveSnapshotCSV(page, func(filename string) (string, error) {
 		return runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-			Title:           "Export Current Record as CSV",
+			Title:           "Export Record as CSV",
 			DefaultFilename: filename,
 			Filters:         []runtime.FileFilter{{DisplayName: "CSV files", Pattern: "*.csv"}},
 		})

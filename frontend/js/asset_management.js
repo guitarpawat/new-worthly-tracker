@@ -50,6 +50,9 @@
         ? previous
         : dialog.querySelector("input:not([type=hidden]):not(:disabled)");
       target?.focus({ preventScroll: true });
+    } else if (view === "create_asset" || view === "create_asset_type") {
+      const firstFieldID = view === "create_asset" ? "asset-name-input" : "asset-type-name-input";
+      root.document.getElementById(firstFieldID)?.focus({ preventScroll: true });
     }
     root.scrollTo?.({ left: scrollX, top: scrollY, behavior: "instant" });
   }
@@ -126,6 +129,7 @@
   function bindAssetTypeForm(app) {
     const nameInput = root.document.getElementById("asset-type-name-input");
     if (nameInput) {
+      ui.bindAssetTypeNameSubmit(nameInput);
       nameInput.addEventListener("input", (event) => {
         state.assetTypeForm.name = event.target.value;
         state.assetManagementNotice = "";
