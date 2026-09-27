@@ -19,6 +19,17 @@
     state,
   } = shared;
 
+  function bindAssetTypeNameSubmit(input) {
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.isComposing || event.repeat
+          || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
+        return;
+      }
+      event.preventDefault();
+      root.document.getElementById("asset-type-save-button")?.click();
+    });
+  }
+
   function renderAssetTypeEditorCard(assetTypeForm, options = {}) {
     const errorMessage = options.errorMessage ?? state.assetTypeError;
     const secondaryButtonLabel = options.secondaryButtonLabel || (assetTypeForm.id > 0 ? "Close" : "Reset");
@@ -424,6 +435,7 @@
   }
 
   return {
+    bindAssetTypeNameSubmit,
     bindStandaloneDecimalInput,
     buildAssetCreatePayload,
     buildAssetFormState,

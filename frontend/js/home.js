@@ -230,8 +230,8 @@
       },
       {
         id: "export_csv",
-        label: "Export Current Record as CSV",
-        note: page?.HasSnapshot ? formatDateLabel(page.SnapshotDate) : "",
+        label: "Export Record as CSV",
+        note: "Save this snapshot’s assets and values to a CSV file.",
         disabled: !page?.HasSnapshot,
       },
       {

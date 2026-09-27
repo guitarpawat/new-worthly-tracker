@@ -65,6 +65,7 @@
 
     const nameInput = root.document.getElementById("asset-type-name-input");
     if (nameInput) {
+      assetManagement.bindAssetTypeNameSubmit(nameInput);
       nameInput.addEventListener("input", (event) => {
         modal.assetTypeForm.name = event.target.value;
       });
@@ -216,6 +217,8 @@
             error: "",
           };
         renderEditPage(app);
+        const firstFieldID = kind === "asset_type" ? "asset-type-name-input" : "asset-name-input";
+        root.document.getElementById(firstFieldID)?.focus({ preventScroll: true });
       } catch (error) {
         state.editError = error?.message || String(error);
         renderEditPage(app);
