@@ -26,8 +26,11 @@
     }
 
     const view = state.assetManagementView || "create_asset";
+    const scrollX = root.scrollX || 0;
+    const scrollY = root.scrollY || 0;
+    const focusedID = root.document.activeElement?.id;
     appRoot.innerHTML = `
-      <main class="app-layout asset-management-layout ${state.assetManagementModal ? "app-modal-open" : ""}">
+      <main ${state.assetManagementModal ? "inert" : ""} class="app-layout asset-management-layout ${state.assetManagementModal ? "app-modal-open" : ""}">
         <section class="hero">
           <div>
             <h1>${renderAppTitle("Manage Asset")}</h1>
@@ -40,6 +43,15 @@
     `;
 
     bindAssetManagementPage(app);
+    if (state.assetManagementModal) {
+      const dialog = root.document.querySelector(".asset-management-dialog-shell");
+      const previous = focusedID ? root.document.getElementById(focusedID) : null;
+      const target = previous && dialog.contains(previous) && !previous.disabled
+        ? previous
+        : dialog.querySelector("input:not([type=hidden]):not(:disabled)");
+      target?.focus({ preventScroll: true });
+    }
+    root.scrollTo?.({ left: scrollX, top: scrollY, behavior: "instant" });
   }
 
   function bindAssetManagementPage(app) {
@@ -163,7 +175,7 @@
             }
             await app.loadAssetManagementPage(
               isEditMode
-                ? { view: "edit_asset_type", selectedAssetTypeID: result.ID }
+                ? { view: "edit_asset_type", selectedAssetTypeID: result.ID, preserveScroll: true }
                 : { view: "create_asset_type" },
             );
           } catch (error) {
@@ -273,7 +285,7 @@
             }
             await app.loadAssetManagementPage(
               isEditMode
-                ? { view: "edit_asset", selectedAssetID: result.ID }
+                ? { view: "edit_asset", selectedAssetID: result.ID, preserveScroll: true }
                 : { view: "create_asset" },
             );
           } catch (error) {
@@ -403,6 +415,18 @@
   }
 
   function handleAssetManagementKeydown(event, app) {
+    if (state.assetManagementModal && event.key === "Tab") {
+      const dialog = root.document.querySelector(".asset-management-dialog-shell");
+      const fields = Array.from(dialog.querySelectorAll(
+        'input:not([type="hidden"]):not(:disabled), button:not(:disabled), [tabindex="0"]',
+      )).filter((field) => field.getClientRects().length > 0);
+      const index = fields.indexOf(root.document.activeElement);
+      const next = index < 0 ? (event.shiftKey ? fields.length - 1 : 0)
+        : (index + (event.shiftKey ? -1 : 1) + fields.length) % fields.length;
+      event.preventDefault();
+      fields[next]?.focus();
+      return true;
+    }
     if (!shouldCloseAssetManagementModalOnEscape({
       key: event.key,
       hasAssetManagementModal: Boolean(state.assetManagementModal),

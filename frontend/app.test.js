@@ -250,6 +250,7 @@ test("buildHomeOverflowActions keeps future pages in menu and moves delete there
   assert.deepEqual(actions.map((action) => action.id), [
     "asset_management",
     "progress",
+    "export_csv",
     "delete",
   ]);
   assert.equal(actions[0].disabled, false);
@@ -258,7 +259,8 @@ test("buildHomeOverflowActions keeps future pages in menu and moves delete there
   assert.equal(actions[1].label, "Progress & Goals");
   assert.equal(actions[1].note, "Summary table, chart, and goal projection");
   assert.equal(actions[2].disabled, false);
-  assert.equal(actions[2].label, "Delete Snapshot");
+  assert.equal(actions[2].label, "Export Current Record as CSV");
+  assert.equal(actions[3].label, "Delete Snapshot");
   assert.equal(actions[2].note, "12 Apr 2026");
 });
 

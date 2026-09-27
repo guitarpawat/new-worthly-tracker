@@ -6,6 +6,7 @@ It is built with Go, Wails, and SQLite, with a spreadsheet-style light UI aimed 
 ## What It Does
 
 - Record net worth snapshots by date
+- Export the displayed snapshot from the hamburger menu as CSV using a native Save dialog
 - Group assets by asset type
 - Show per-asset-type summaries on the home page
 - Compare the current snapshot with the previous snapshot

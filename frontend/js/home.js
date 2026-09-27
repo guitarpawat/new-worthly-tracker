@@ -229,6 +229,12 @@
         disabled: false,
       },
       {
+        id: "export_csv",
+        label: "Export Current Record as CSV",
+        note: page?.HasSnapshot ? formatDateLabel(page.SnapshotDate) : "",
+        disabled: !page?.HasSnapshot,
+      },
+      {
         id: "delete",
         label: "Delete Snapshot",
         note: page?.HasSnapshot ? formatDateLabel(page.SnapshotDate) : "",
@@ -419,6 +425,18 @@
           await runTransition(async () => {
             void logHomeAction("progress_click", state.offset);
             await app.loadProgressPage();
+          });
+          return;
+        }
+
+        if (action === "export_csv") {
+          closeHomeOverflowMenu();
+          await runTransition(async () => {
+            try {
+              await shared.resolveBackend().ExportSnapshotCSV(state.offset, page.SnapshotID);
+            } catch (error) {
+              rootErrorBanner(error?.message || String(error));
+            }
           });
           return;
         }
