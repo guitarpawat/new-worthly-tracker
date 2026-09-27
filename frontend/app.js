@@ -82,7 +82,10 @@ async function loadAssetManagementPage(options = {}) {
   state.assetManagementModal = null;
   state.snapshotAssetModal = null;
   const root = document.getElementById("app");
-  root.innerHTML = '<div class="loading-state">Loading asset management...</div>';
+  const scrollPosition = options.preserveScroll ? { left: globalThis.scrollX, top: globalThis.scrollY } : null;
+  if (!options.preserveScroll) {
+    root.innerHTML = '<div class="loading-state">Loading asset management...</div>';
+  }
 
   try {
     const backend = resolveBackend();
@@ -101,6 +104,9 @@ async function loadAssetManagementPage(options = {}) {
       ? assetManagement.buildEmptyAssetForm(page)
       : assetManagement.buildAssetFormState(page, selectedAssetID);
     assetManagement.renderAssetManagementPage(appContext());
+    if (scrollPosition) {
+      globalThis.scrollTo({ ...scrollPosition, behavior: "instant" });
+    }
   } catch (error) {
     root.innerHTML = renderErrorState(
       "Unable to load asset management",
@@ -222,6 +228,7 @@ if (typeof window !== "undefined") {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
+    loadAssetManagementPage,
     ...shared,
     ...controls,
     ...home,
