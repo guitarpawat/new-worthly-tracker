@@ -7,6 +7,9 @@
   }
   root.WorthlyAssetManagement = assetManagement;
 }(typeof globalThis !== "undefined" ? globalThis : this, function buildAssetManagement(shared, ui, root) {
+  const customAllocations = root.WorthlyCustomAllocations || (typeof require !== "undefined" ? require("./custom_allocations.js") : null);
+  const deletion = root.WorthlyAssetManagementDelete || (typeof require !== "undefined" ? require("./asset_management_delete.js") : null);
+  const assetCharts = root.WorthlyAssetChartAllocations || (typeof require !== "undefined" ? require("./asset_chart_allocations.js") : null);
   const { escapeHTML, renderAppTitle, renderErrorState, runTransition, state } = shared;
 
   function resolveAssetReorder() {
@@ -25,10 +28,12 @@
       return;
     }
 
-    const view = state.assetManagementView || "create_asset";
+    const view = resolveAssetManagementView();
+    state.assetManagementView = view;
     const scrollX = root.scrollX || 0;
     const scrollY = root.scrollY || 0;
     const focusedID = root.document.activeElement?.id;
+    const dialogScrollTop = root.document.querySelector?.(".asset-management-dialog-backdrop")?.scrollTop;
     appRoot.innerHTML = `
       <main ${state.assetManagementModal ? "inert" : ""} class="app-layout asset-management-layout ${state.assetManagementModal ? "app-modal-open" : ""}">
         <section class="hero">
@@ -48,16 +53,19 @@
       const previous = focusedID ? root.document.getElementById(focusedID) : null;
       const target = previous && dialog.contains(previous) && !previous.disabled
         ? previous
-        : dialog.querySelector("input:not([type=hidden]):not(:disabled)");
+        : dialog.querySelector("input:not([type=hidden]):not(:disabled), #management-delete-cancel");
       target?.focus({ preventScroll: true });
-    } else if (view === "create_asset" || view === "create_asset_type") {
-      const firstFieldID = view === "create_asset" ? "asset-name-input" : "asset-type-name-input";
-      root.document.getElementById(firstFieldID)?.focus({ preventScroll: true });
     }
     root.scrollTo?.({ left: scrollX, top: scrollY, behavior: "instant" });
+    const backdrop = root.document.querySelector?.(".asset-management-dialog-backdrop");
+    if (backdrop && Number.isFinite(dialogScrollTop)) backdrop.scrollTop = dialogScrollTop;
   }
 
   function bindAssetManagementPage(app) {
+    if (state.assetManagementView === "manage_chart") {
+      customAllocations.bind(state.assetManagementPage, () => renderAssetManagementPage(app),
+        () => app.loadAssetManagementPage({ view: "manage_chart", preserveScroll: true }));
+    }
     for (const button of root.document.querySelectorAll("[data-asset-management-view]")) {
       button.addEventListener("click", (event) => {
         const nextView = event.currentTarget.dataset.assetManagementView;
@@ -68,32 +76,25 @@
         state.assetTypeError = "";
         state.assetError = "";
         state.assetManagementView = nextView;
-        if (nextView === "create_asset") {
-          state.assetForm = ui.buildEmptyAssetForm(state.assetManagementPage);
-        }
-        if (nextView === "create_asset_type") {
-          state.assetTypeForm = ui.buildEmptyAssetTypeForm();
-        }
-        if (nextView === "edit_asset") {
-          state.assetForm = ui.buildEmptyAssetForm(state.assetManagementPage);
-          state.assetManagementModal = null;
-        }
-        if (nextView === "edit_asset_type") {
-          state.assetTypeForm = ui.buildEmptyAssetTypeForm();
-          state.assetManagementModal = null;
-        }
-        if (nextView === "reorder_asset" || nextView === "reorder_asset_type") {
-          state.assetManagementModal = null;
-        }
+        state.assetManagementModal = null;
+        state.assetForm = ui.buildEmptyAssetForm(state.assetManagementPage);
+        state.assetTypeForm = ui.buildEmptyAssetTypeForm();
         renderAssetManagementPage(app);
+        if (nextView === "manage_chart") root.document.getElementById("chart-add")?.focus({ preventScroll: true });
       });
     }
 
-    if (state.assetManagementView === "create_asset_type" || state.assetManagementView === "edit_asset_type") {
-      bindAssetTypeForm(app);
-    }
-    if (state.assetManagementView === "create_asset" || state.assetManagementView === "edit_asset") {
-      bindAssetForm(app);
+    if (state.assetManagementModal?.kind === "asset_type") bindAssetTypeForm(app);
+    if (state.assetManagementModal?.kind === "asset") bindAssetForm(app);
+    for (const kind of ["asset", "asset_type"]) {
+      root.document.getElementById(`management-add-${kind}`)?.addEventListener("click", () => {
+        state.assetForm = ui.buildEmptyAssetForm(state.assetManagementPage);
+        state.assetTypeForm = ui.buildEmptyAssetTypeForm();
+        state.assetError = "";
+        state.assetTypeError = "";
+        state.assetManagementModal = { kind };
+        renderAssetManagementPage(app);
+      });
     }
     if (state.assetManagementView === "reorder_asset_type") {
       resolveAssetReorder().bindAssetTypeReorderPage(app);
@@ -104,8 +105,10 @@
 
     bindAssetManagementFilters(app);
     bindAssetManagementModal(app);
+    deletion.bind(() => renderAssetManagementPage(app), (options) => app.loadAssetManagementPage(options));
 
     for (const row of root.document.querySelectorAll("[data-asset-type-row-id]")) {
+      row.addEventListener("keydown", activateManagementRow);
       row.addEventListener("click", () => {
         state.assetTypeForm = ui.buildAssetTypeFormState(state.assetManagementPage, Number(row.dataset.assetTypeRowId));
         state.assetTypeError = "";
@@ -116,6 +119,7 @@
     }
 
     for (const row of root.document.querySelectorAll("[data-asset-row-id]")) {
+      row.addEventListener("keydown", activateManagementRow);
       row.addEventListener("click", () => {
         state.assetForm = ui.buildAssetFormState(state.assetManagementPage, Number(row.dataset.assetRowId));
         state.assetError = "";
@@ -123,6 +127,12 @@
         state.assetManagementModal = { kind: "asset" };
         renderAssetManagementPage(app);
       });
+    }
+  }
+
+  function activateManagementRow(event) {
+    if ((event.key === "Enter" || event.key === " ") && !event.repeat && !event.isComposing) {
+      event.preventDefault(); event.currentTarget.click();
     }
   }
 
@@ -148,17 +158,7 @@
     if (resetButton) {
       resetButton.addEventListener("click", async () => {
         await runTransition(async () => {
-          if (state.assetManagementView === "create_asset_type") {
-            state.assetTypeForm = ui.buildEmptyAssetTypeForm();
-            state.assetTypeError = "";
-            renderAssetManagementPage(app);
-            return;
-          }
-
-          state.assetTypeForm = ui.buildEmptyAssetTypeForm();
-          state.assetTypeError = "";
-          state.assetManagementModal = null;
-          renderAssetManagementPage(app);
+          closeAssetEditor(app);
         });
       });
     }
@@ -180,7 +180,7 @@
             await app.loadAssetManagementPage(
               isEditMode
                 ? { view: "edit_asset_type", selectedAssetTypeID: result.ID, preserveScroll: true }
-                : { view: "create_asset_type" },
+                : { view: "edit_asset_type", preserveScroll: true },
             );
           } catch (error) {
             state.assetTypeError = error?.message || String(error);
@@ -192,6 +192,7 @@
   }
 
   function bindAssetForm(app) {
+    assetCharts.bind(state.assetForm, () => renderAssetManagementPage(app));
     const nameInput = root.document.getElementById("asset-name-input");
     if (nameInput) {
       nameInput.addEventListener("input", (event) => {
@@ -258,17 +259,7 @@
     if (resetButton) {
       resetButton.addEventListener("click", async () => {
         await runTransition(async () => {
-          if (state.assetManagementView === "create_asset") {
-            state.assetForm = ui.buildEmptyAssetForm(state.assetManagementPage);
-            state.assetError = "";
-            renderAssetManagementPage(app);
-            return;
-          }
-
-          state.assetForm = ui.buildEmptyAssetForm(state.assetManagementPage);
-          state.assetError = "";
-          state.assetManagementModal = null;
-          renderAssetManagementPage(app);
+          closeAssetEditor(app);
         });
       });
     }
@@ -281,6 +272,10 @@
           try {
             const backend = shared.resolveBackend();
             const isEditMode = state.assetForm.id > 0;
+            if (isEditMode) {
+              const error = assetCharts.validate(state.assetForm);
+              if (error) throw new Error(error);
+            }
             const result = state.assetForm.id > 0
               ? await backend.UpdateAsset(ui.buildAssetUpdatePayload(state.assetForm))
               : await backend.CreateAsset(ui.buildAssetCreatePayload(state.assetForm));
@@ -290,7 +285,7 @@
             await app.loadAssetManagementPage(
               isEditMode
                 ? { view: "edit_asset", selectedAssetID: result.ID, preserveScroll: true }
-                : { view: "create_asset" },
+                : { view: "edit_asset", preserveScroll: true },
             );
           } catch (error) {
             state.assetError = error?.message || String(error);
@@ -320,26 +315,17 @@
   }
 
   function resolveAssetManagementView(options = {}) {
-    if (options.view) {
-      return options.view;
-    }
-    if (options.selectedAssetID) {
-      return "edit_asset";
-    }
-    if (options.selectedAssetTypeID) {
-      return "edit_asset_type";
-    }
-    return state.assetManagementView || "create_asset";
+    const view = options.view || (options.selectedAssetID ? "edit_asset" : options.selectedAssetTypeID ? "edit_asset_type" : state.assetManagementView) || "edit_asset";
+    return view === "create_asset" ? "edit_asset" : view === "create_asset_type" ? "edit_asset_type" : view;
   }
 
   function renderAssetManagementSubnav(view, page) {
     const actions = [
-      { id: "create_asset", label: "Add New Asset", disabled: false },
-      { id: "create_asset_type", label: "Add New Asset Type", disabled: false },
-      { id: "edit_asset", label: "Edit Asset", disabled: (page?.Assets?.length || 0) === 0 },
-      { id: "edit_asset_type", label: "Edit Asset Type", disabled: (page?.AssetTypes?.length || 0) === 0 },
+      { id: "edit_asset", label: "Manage Asset", disabled: false },
       { id: "reorder_asset", label: "Reorder Asset", disabled: (page?.Assets?.length || 0) === 0 },
-      { id: "reorder_asset_type", label: "Reorder Asset Type", disabled: (page?.AssetTypes?.length || 0) === 0 },
+      { id: "edit_asset_type", label: "Manage Type", disabled: false },
+      { id: "reorder_asset_type", label: "Reorder Type", disabled: (page?.AssetTypes?.length || 0) === 0 },
+      { id: "manage_chart", label: "Manage Chart", disabled: false },
     ];
     return `
       <section class="panel asset-management-subnav">
@@ -357,26 +343,47 @@
     `;
   }
 
+  function renderManagementToolbar(kind, label) {
+    const disabled = kind === "asset" && !state.assetManagementPage.ActiveAssetTypes?.length;
+    return `<section class="panel asset-management-intro"><div><h2>${label}</h2>
+      <p class="subtle">Select a row to edit or delete. ${disabled ? "Add an active type before adding assets." : ""}</p></div>
+      <button id="management-add-${kind}" class="button" type="button" ${disabled ? "disabled" : ""}>Add ${kind === "asset" ? "Asset" : "Type"}</button></section>`;
+  }
+
   function renderAssetManagementContent(view, page) {
     const notice = state.assetManagementNotice
       ? `<p class="success-copy success-banner">${escapeHTML(state.assetManagementNotice)}</p>`
       : "";
     switch (view) {
-      case "create_asset":
-        return `<section class="asset-management-centered-shell">${notice}${ui.renderAssetEditorCard(page, state.assetForm)}</section>`;
+      case "manage_chart":
+        return customAllocations.render(page);
       case "edit_asset":
-        return `<section class="asset-management-table-shell">${ui.renderAssetTable(page, state.assetForm)}</section>`;
-      case "create_asset_type":
-        return `<section class="asset-management-centered-shell">${notice}${ui.renderAssetTypeEditorCard(state.assetTypeForm)}</section>`;
+        return `${renderManagementToolbar("asset", "Assets")}${notice}<section class="asset-management-table-shell">${ui.renderAssetTable(page, state.assetForm)}</section>`;
       case "edit_asset_type":
-        return `<section class="asset-management-table-shell">${ui.renderAssetTypeTable(page, state.assetTypeForm)}</section>`;
+        return `${renderManagementToolbar("asset_type", "Types")}${notice}<section class="asset-management-table-shell">${ui.renderAssetTypeTable(page, state.assetTypeForm)}</section>`;
       case "reorder_asset":
         return resolveAssetReorder().renderAssetReorderPage();
       case "reorder_asset_type":
         return resolveAssetReorder().renderAssetTypeReorderPage();
       default:
-        return `<section class="asset-management-centered-shell">${ui.renderAssetEditorCard(page, state.assetForm)}</section>`;
+        return `${renderManagementToolbar("asset", "Assets")}<section class="asset-management-table-shell">${ui.renderAssetTable(page, state.assetForm)}</section>`;
     }
+  }
+
+  function closeAssetEditor(app) {
+    const modal = state.assetManagementModal;
+    if (modal?.saving) return;
+    const isType = modal?.kind === "asset_type";
+    const id = isType ? state.assetTypeForm.id : state.assetForm.id;
+    state.assetManagementModal = null;
+    state.assetForm = ui.buildEmptyAssetForm(state.assetManagementPage);
+    state.assetTypeForm = ui.buildEmptyAssetTypeForm();
+    state.assetError = "";
+    state.assetTypeError = "";
+    renderAssetManagementPage(app);
+    const row = id ? root.document.querySelector?.(`[data-${isType ? "asset-type" : "asset"}-row-id="${id}"]`) : null;
+    const add = root.document.getElementById(`management-add-${isType ? "asset_type" : "asset"}`);
+    (row || add)?.focus?.({ preventScroll: true });
   }
 
   function renderAssetManagementModal(page) {
@@ -384,12 +391,14 @@
       return "";
     }
 
-    const body = state.assetManagementModal.kind === "asset_type"
-      ? ui.renderAssetTypeEditorCard(state.assetTypeForm, { errorMessage: state.assetTypeError })
-      : ui.renderAssetEditorCard(page, state.assetForm, { errorMessage: state.assetError });
+    const isChart = state.assetManagementModal.kind === "chart";
+    const deleteOptions = deletion.editorOptions(page);
+    const body = state.assetManagementModal.confirmDelete ? deletion.renderConfirmation() : isChart ? customAllocations.renderDialog() : state.assetManagementModal.kind === "asset_type"
+      ? ui.renderAssetTypeEditorCard(state.assetTypeForm, { errorMessage: state.assetTypeError, secondaryButtonLabel: state.assetTypeForm.id ? "Close" : "Cancel", ...deleteOptions })
+      : ui.renderAssetEditorCard(page, state.assetForm, { errorMessage: state.assetError, secondaryButtonLabel: state.assetForm.id ? "Close" : "Cancel", ...deleteOptions });
     return `
       <div class="dialog-backdrop asset-management-dialog-backdrop" data-asset-management-modal-close="backdrop">
-        <section class="asset-management-dialog-shell" role="dialog" aria-modal="true">
+        <section class="asset-management-dialog-shell ${isChart ? "chart-management-dialog" : ""}" role="dialog" aria-modal="true" ${isChart ? 'aria-labelledby="chart-dialog-title"' : ""}>
           ${body}
         </section>
       </div>
@@ -406,14 +415,11 @@
         if (event.target !== event.currentTarget) {
           return;
         }
-        state.assetManagementModal = null;
-        if (state.assetManagementView === "edit_asset") {
-          state.assetForm = ui.buildEmptyAssetForm(state.assetManagementPage);
+        if (state.assetManagementModal.kind === "chart") {
+          customAllocations.close(() => renderAssetManagementPage(app));
+          return;
         }
-        if (state.assetManagementView === "edit_asset_type") {
-          state.assetTypeForm = ui.buildEmptyAssetTypeForm();
-        }
-        renderAssetManagementPage(app);
+        closeAssetEditor(app);
       });
     }
   }
@@ -439,14 +445,11 @@
     }
 
     event.preventDefault();
-    state.assetManagementModal = null;
-    if (state.assetManagementView === "edit_asset") {
-      state.assetForm = ui.buildEmptyAssetForm(state.assetManagementPage);
+    if (state.assetManagementModal?.kind === "chart") {
+      customAllocations.close(() => renderAssetManagementPage(app));
+      return true;
     }
-    if (state.assetManagementView === "edit_asset_type") {
-      state.assetTypeForm = ui.buildEmptyAssetTypeForm();
-    }
-    renderAssetManagementPage(app);
+    closeAssetEditor(app);
     return true;
   }
 

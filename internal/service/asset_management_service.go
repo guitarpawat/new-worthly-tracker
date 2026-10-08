@@ -10,6 +10,8 @@ import (
 )
 
 type AssetManagementReader interface {
+	DeleteAsset(context.Context, int64) error
+	DeleteAssetType(context.Context, int64) error
 	GetPage(ctx context.Context) (dto.AssetManagementPage, error)
 	CreateAssetType(ctx context.Context, input dto.CreateAssetTypeInput) (dto.AssetTypeMutationResult, error)
 	UpdateAssetType(ctx context.Context, input dto.UpdateAssetTypeInput) (dto.AssetTypeMutationResult, error)
@@ -17,6 +19,14 @@ type AssetManagementReader interface {
 	UpdateAsset(ctx context.Context, input dto.UpdateAssetInput) (dto.AssetMutationResult, error)
 	ReorderAssetTypes(ctx context.Context, input dto.ReorderAssetTypesInput) error
 	ReorderAssets(ctx context.Context, input dto.ReorderAssetInput) error
+}
+
+func (s *AssetManagementService) DeleteAsset(ctx context.Context, id int64) error {
+	return s.repository.DeleteAsset(ctx, id)
+}
+
+func (s *AssetManagementService) DeleteAssetType(ctx context.Context, id int64) error {
+	return s.repository.DeleteAssetType(ctx, id)
 }
 
 type AssetManagementService struct {

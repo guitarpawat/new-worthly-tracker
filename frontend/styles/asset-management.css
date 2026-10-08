@@ -145,6 +145,16 @@
 
 .asset-management-error {
   margin: 0;
+  grid-column: 1 / -1;
+}
+
+.management-delete-hover {
+  display: inline-flex;
+  cursor: not-allowed;
+}
+
+.management-delete-hover > button:disabled {
+  pointer-events: none;
 }
 
 .asset-management-inline-editor {

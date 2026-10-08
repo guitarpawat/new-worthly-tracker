@@ -24,13 +24,13 @@
     } = config;
     const normalizedValue = value === undefined || value === null ? "" : String(value);
     const selectedOption = (options || []).find((option) => String(option.value) === normalizedValue);
-    const triggerLabel = selectedOption?.label || placeholder;
+    const triggerLabel = config.triggerLabel || selectedOption?.label || placeholder;
     const tabIndexAttr = tabIndex === undefined ? "" : ` tabindex="${tabIndex}"`;
     const disabledAttr = disabled ? " disabled" : "";
     const labelAttr = ariaLabel ? ` aria-label="${escapeHTML(ariaLabel)}"` : "";
 
     return `
-      <div class="custom-control custom-select-control" data-control-id="${escapeHTML(id)}" data-control-kind="select">
+      <div class="custom-control custom-select-control" data-control-id="${escapeHTML(id)}" data-control-kind="select" data-control-fixed-label="${escapeHTML(config.triggerLabel || "")}">
         <input id="${escapeHTML(id)}" type="hidden" value="${escapeHTML(normalizedValue)}" />
         <button
           id="${escapeHTML(id)}-trigger"
@@ -351,7 +351,7 @@
 
     const selectedOption = control.querySelector(`[data-control-select-option="${controlID}"][data-value="${cssEscape(String(value))}"]`);
     if (selectedOption) {
-      triggerLabel.textContent = selectedOption.dataset.label || selectedOption.textContent || "";
+      triggerLabel.textContent = control.dataset.controlFixedLabel || selectedOption.dataset.label || selectedOption.textContent || "";
     }
     syncSelectedOptionState(controlID, value);
   }
@@ -465,6 +465,7 @@
   }
 
   function commitSelectValue(controlID, value, label) {
+    const control = findControl(controlID);
     const input = findControlInput(controlID);
     const triggerLabel = findControlTriggerLabel(controlID);
     if (!input || !triggerLabel) {
@@ -472,7 +473,7 @@
     }
 
     input.value = value;
-    triggerLabel.textContent = label;
+    triggerLabel.textContent = control?.dataset.controlFixedLabel || label;
     syncSelectedOptionState(controlID, value);
     closeOpenControl();
     dispatchControlChange(input);

@@ -26,6 +26,7 @@ type assetTypeListRow struct {
 }
 
 type assetListRow struct {
+	CanDelete     bool            `db:"can_delete"`
 	ID            int64           `db:"id"`
 	Name          string          `db:"name"`
 	AssetTypeID   int64           `db:"asset_type_id"`
@@ -80,6 +81,7 @@ func (r *AssetManagementRepository) GetPage(ctx context.Context) (dto.AssetManag
 	assetRows := []assetListRow{}
 	if err := r.db.SelectContext(ctx, &assetRows, `
 		SELECT
+			NOT EXISTS (SELECT 1 FROM record_items ri WHERE ri.asset_id = a.id) AS can_delete,
 			a.id,
 			a.name,
 			a.asset_type_id,
@@ -128,6 +130,7 @@ func (r *AssetManagementRepository) GetPage(ctx context.Context) (dto.AssetManag
 	}
 	for _, row := range assetRows {
 		page.Assets = append(page.Assets, dto.AssetRow{
+			CanDelete:     row.CanDelete,
 			ID:            row.ID,
 			Name:          row.Name,
 			AssetTypeID:   row.AssetTypeID,
@@ -208,7 +211,7 @@ func (r *AssetManagementRepository) CreateAsset(ctx context.Context, input dto.C
 	if typeMeta.DeletedAt.Valid || !typeMeta.IsActive {
 		return dto.AssetMutationResult{}, recorderr.ErrAssetTypeInactive
 	}
-	exists, err := r.assetNameExistsInType(ctx, input.AssetTypeID, input.Name, 0)
+	exists, err := r.assetNameExistsInType(ctx, r.db, input.AssetTypeID, input.Name, 0)
 	if err != nil {
 		return dto.AssetMutationResult{}, err
 	}
@@ -245,7 +248,12 @@ func (r *AssetManagementRepository) CreateAsset(ctx context.Context, input dto.C
 }
 
 func (r *AssetManagementRepository) UpdateAsset(ctx context.Context, input dto.UpdateAssetInput) (dto.AssetMutationResult, error) {
-	assetMeta, err := r.loadAssetMeta(ctx, r.db, input.ID)
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return dto.AssetMutationResult{}, fmt.Errorf("begin asset update: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	assetMeta, err := r.loadAssetMeta(ctx, tx, input.ID)
 	if err != nil {
 		return dto.AssetMutationResult{}, err
 	}
@@ -253,7 +261,7 @@ func (r *AssetManagementRepository) UpdateAsset(ctx context.Context, input dto.U
 		return dto.AssetMutationResult{}, recorderr.ErrAssetNotFound
 	}
 
-	typeMeta, err := r.loadAssetTypeMeta(ctx, r.db, input.AssetTypeID)
+	typeMeta, err := r.loadAssetTypeMeta(ctx, tx, input.AssetTypeID)
 	if err != nil {
 		return dto.AssetMutationResult{}, err
 	}
@@ -263,7 +271,7 @@ func (r *AssetManagementRepository) UpdateAsset(ctx context.Context, input dto.U
 	if !typeMeta.IsActive && input.AssetTypeID != assetMeta.AssetTypeID {
 		return dto.AssetMutationResult{}, recorderr.ErrAssetTypeInactive
 	}
-	exists, err := r.assetNameExistsInType(ctx, input.AssetTypeID, input.Name, input.ID)
+	exists, err := r.assetNameExistsInType(ctx, tx, input.AssetTypeID, input.Name, input.ID)
 	if err != nil {
 		return dto.AssetMutationResult{}, err
 	}
@@ -276,7 +284,7 @@ func (r *AssetManagementRepository) UpdateAsset(ctx context.Context, input dto.U
 		autoIncrement = decimal.Zero
 	}
 
-	result, err := r.db.ExecContext(ctx, `
+	result, err := tx.ExecContext(ctx, `
 		UPDATE assets
 		SET asset_type_id = ?,
 		    name = ?,
@@ -300,6 +308,12 @@ func (r *AssetManagementRepository) UpdateAsset(ctx context.Context, input dto.U
 		return dto.AssetMutationResult{}, recorderr.ErrAssetNotFound
 	}
 
+	if err := saveAssetChartAllocations(ctx, tx, input); err != nil {
+		return dto.AssetMutationResult{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return dto.AssetMutationResult{}, fmt.Errorf("commit asset update: %w", err)
+	}
 	return dto.AssetMutationResult{ID: input.ID}, nil
 }
 
@@ -562,9 +576,9 @@ func (r *AssetManagementRepository) loadAssetMeta(
 	return row, nil
 }
 
-func (r *AssetManagementRepository) assetNameExistsInType(ctx context.Context, assetTypeID int64, name string, excludeID int64) (bool, error) {
+func (r *AssetManagementRepository) assetNameExistsInType(ctx context.Context, queryer sqlx.QueryerContext, assetTypeID int64, name string, excludeID int64) (bool, error) {
 	var count int
-	if err := r.db.GetContext(ctx, &count, `
+	if err := sqlx.GetContext(ctx, queryer, &count, `
 		SELECT COUNT(1)
 		FROM assets
 		WHERE deleted_at IS NULL

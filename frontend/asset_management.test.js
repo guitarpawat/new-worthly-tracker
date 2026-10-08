@@ -95,6 +95,7 @@ test("new asset and asset type pages focus their first field", (t) => {
     activeElement: null,
     getElementById: (id) => id === "app" ? { innerHTML: "" } : inputs[id],
     querySelectorAll: () => [],
+    querySelector: () => ({ contains: () => false, querySelector: () => inputs[state.assetManagementModal.kind === "asset" ? "asset-name-input" : "asset-type-name-input"] }),
   };
   state.assetManagementPage = { Assets: [], AssetTypes: [] };
   state.assetManagementModal = null;
@@ -102,6 +103,7 @@ test("new asset and asset type pages focus their first field", (t) => {
   state.assetTypeForm = management.buildEmptyAssetTypeForm();
   for (const [view, field] of [["create_asset", "asset-name-input"], ["create_asset_type", "asset-type-name-input"]]) {
     state.assetManagementView = view;
+    state.assetManagementModal = { kind: view === "create_asset" ? "asset" : "asset_type" };
     management.renderAssetManagementPage({});
     assert.equal(focused, field);
   }

@@ -7,6 +7,7 @@
   }
   root.WorthlyHome = home;
 }(typeof globalThis !== "undefined" ? globalThis : this, function buildHome(shared, controls, root) {
+  const customControls = root.WorthlyCustomAllocationControls || (typeof require !== "undefined" ? require("./custom_allocation_controls.js") : null);
   const {
     clickIfEnabled,
     escapeHTML,
@@ -279,7 +280,7 @@
     const { ALLOCATION_MODES, buildAllocationRows } = resolveProgressChartLogic();
     const allocationDate = normalizeHomeSnapshotDate(page.SnapshotDate);
     const allocationPage = buildHomeAllocationPage(page);
-    const mode = state.homeAllocationModal.mode || state.progressAllocationMode || "asset_type";
+    const mode = customControls.normalizeMode(state.homeAllocationModal.mode || state.progressAllocationMode, page.CustomAllocations);
     const allocationRows = buildAllocationRows(allocationPage, allocationDate, mode);
 
     return `
@@ -298,6 +299,7 @@
                   data-home-allocation-mode="${item.id}"
                 >${escapeHTML(item.label)}</button>
               `).join("")}
+              ${customControls.render(page.CustomAllocations, mode, "home")}
             </div>
             <button id="home-allocation-close" class="button progress-allocation-close-button" type="button">Close</button>
           </div>
@@ -307,7 +309,7 @@
             </div>
             <aside class="progress-allocation-sidebar">
               ${renderAllocationLegend(allocationRows, mode)}
-              ${renderAllocationTotalRow(page.Summary?.TotalCurrent || 0)}
+              ${renderAllocationTotalRow(mode.startsWith("custom:") ? allocationRows.reduce((sum, row) => sum + row.value, 0) : page.Summary?.TotalCurrent || 0)}
             </aside>
           </div>
         </section>
@@ -553,11 +555,17 @@
       return;
     }
 
+    customControls.bind("home", (mode) => {
+      state.progressAllocationMode = mode;
+      state.homeAllocationModal.mode = mode;
+      renderHomePage(page, app);
+    });
     for (const button of root.document.querySelectorAll("[data-home-allocation-mode]")) {
       button.addEventListener("click", () => {
         state.progressAllocationMode = button.dataset.homeAllocationMode;
         state.homeAllocationModal.mode = state.progressAllocationMode;
         renderHomePage(page, app);
+        if (state.progressAllocationMode.startsWith("custom:")) customControls.focus("home");
       });
     }
 
@@ -764,7 +772,7 @@
     const { buildAllocationChartConfig } = resolveProgressChartLogic();
     const allocationPage = buildHomeAllocationPage(page);
     const allocationDate = normalizeHomeSnapshotDate(page.SnapshotDate);
-    const mode = state.homeAllocationModal.mode || state.progressAllocationMode || "asset_type";
+    const mode = customControls.normalizeMode(state.homeAllocationModal.mode || state.progressAllocationMode, page.CustomAllocations);
 
     const allocationCanvas = root.document.getElementById("home-allocation-chart");
     if (allocationCanvas) {
@@ -847,6 +855,7 @@
 
     return {
       SnapshotDate: normalizeHomeSnapshotDate(page.SnapshotDate),
+      CustomAllocations: page.CustomAllocations || [],
       ByAssetType: byAssetType,
       ByAsset: byAsset,
       ByCategory: byCategory,

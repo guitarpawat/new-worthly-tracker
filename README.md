@@ -13,6 +13,7 @@ It is built with Go, Wails, and SQLite, with a spreadsheet-style light UI aimed 
 - Add, edit, delete, and reorder assets and asset types
 - Use custom in-app date pickers and dropdowns with keyboard support
 - Track progress over time with trend charts, summary tables, allocation popups, and goals
+- Create custom allocation charts with percentage-based categories for each asset
 - Project total net worth with a hybrid forecast: cash and liabilities follow recent monthly drift, while non-cash assets compound from recent growth
 - Jump to the latest 12/18/24/36-month progress range or all records quickly
 - Keep historical snapshots intact with soft delete
@@ -24,6 +25,24 @@ It is built with Go, Wails, and SQLite, with a spreadsheet-style light UI aimed 
 - The latest snapshot is the highest active snapshot date.
 - The previous snapshot is the second latest active snapshot date.
 - Removing an asset from the latest snapshot makes it inactive for future autofill.
+
+## Managing Assets and Types
+
+The management menu is ordered **Manage Asset → Reorder Asset → Manage Type → Reorder Type → Manage Chart**. Type is short for Asset Type.
+
+Manage Asset and Manage Type show lists with **Add Asset** / **Add Type** buttons. Click a row to edit it in a popup. Deletion requires confirmation and is a soft delete. Assets can only be deleted if they have no snapshot records, including records in deleted snapshots. Types can only be deleted after all their assets have been moved or deleted; inactive assets still count.
+
+## Custom Allocations
+
+Open **Manage Asset → Manage Chart** and choose **Add Chart** to create a chart such as **Asset Allocation Country** or **Asset Allocation Type**. Click an existing chart name to rename or delete it in a popup.
+
+To assign tags, open **Manage Asset**, select an asset, and choose a chart from the **Chart Tags** dropdown. Add a **Category** and **Allocation (%)**, then choose **Save Asset**. Switching charts preserves your draft tags. Asset details and all chart tags save together; closing the form discards the draft.
+
+Each asset can have different categories in each chart. Percentages allow two decimal places and must total at most 100% per asset. The remaining percentage, including assets with no categories, appears as **Unallocated**. These settings apply to all snapshots; each chart uses the asset values from the snapshot being viewed.
+
+Assets are included in every custom chart by default. In **Manage Asset → Chart Tags**, choose a chart and turn off **Include in chart** to exclude that asset from its values, percentages, and Unallocated total. Save Asset to apply the change. Previously saved tags are retained for re-inclusion; other charts and snapshot values are unaffected.
+
+Once a chart is saved, the Allocation popup on Home and Progress shows **Custom** beside the built-in chart buttons. Click it to choose a chart from the menu. Negative category values use a bar chart.
 
 ## Requirements
 

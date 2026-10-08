@@ -309,11 +309,12 @@
 
   function buildAllocationChartConfig(page, allocationDate, allocationMode) {
     const rows = buildAllocationRows(page, allocationDate, allocationMode);
+    const signedCustomChart = allocationMode.startsWith("custom:") && rows.some((row) => row.value < 0);
     const backgroundColor = allocationMode === "category"
       ? rows.map((row) => resolveCategoryChartColor(row.name))
       : rows.map((_, index) => PROGRESS_CHART_COLORS[index % PROGRESS_CHART_COLORS.length]);
     return {
-      type: "pie",
+      type: signedCustomChart ? "bar" : "pie",
       data: {
         labels: rows.map((row) => row.name),
         datasets: [{
@@ -325,6 +326,10 @@
         }],
       },
       options: {
+        ...(signedCustomChart ? {
+          indexAxis: "y",
+          scales: { x: { beginAtZero: true, ticks: { callback: (value) => formatTHB(value) } } },
+        } : {}),
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -388,6 +393,9 @@
     }
     if (allocationMode === "category") {
       rows = snapshot.ByCategory || [];
+    }
+    if (allocationMode.startsWith("custom:")) {
+      rows = snapshot.CustomAllocations?.find((chart) => `custom:${chart.ID}` === allocationMode)?.Rows || [];
     }
 
     return rows.map((row) => ({
