@@ -73,7 +73,8 @@ func Run(args []string) {
 	progressService := service.NewProgressService(progressRepository, goalRepository)
 	goalService := service.NewGoalService(goalRepository)
 	demoDataService := service.NewDemoDataService(demoDataRepository)
-	wailsApp := New(logger, recordService, assetManagementService, progressService, goalService, demoDataService)
+	customAllocations := service.NewCustomAllocationService(repository.NewCustomAllocationRepository(database), progressRepository)
+	wailsApp := New(logger, recordService, assetManagementService, progressService, goalService, demoDataService, customAllocations)
 
 	if err := wails.Run(&options.App{
 		Title:            cfg.Name,

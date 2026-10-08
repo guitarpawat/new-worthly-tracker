@@ -346,11 +346,11 @@ test("renderHomeAllocationModal renders a single chart for the current snapshot"
 test("resolveAssetManagementView prefers explicit child page selection", () => {
   state.assetManagementView = "create_asset";
 
-  assert.equal(resolveAssetManagementView({ view: "create_asset" }), "create_asset");
+  assert.equal(resolveAssetManagementView({ view: "create_asset" }), "edit_asset");
   assert.equal(resolveAssetManagementView({ selectedAssetID: 9 }), "edit_asset");
   assert.equal(resolveAssetManagementView({ selectedAssetTypeID: 4 }), "edit_asset_type");
   assert.equal(resolveAssetManagementView({ view: "reorder_asset" }), "reorder_asset");
-  assert.equal(resolveAssetManagementView({}), "create_asset");
+  assert.equal(resolveAssetManagementView({}), "edit_asset");
 });
 
 test("shouldCloseAssetManagementModalOnEscape closes only edit popup escape", () => {

@@ -8,6 +8,7 @@
   }
   root.WorthlyProgressGoals = progressGoals;
 }(typeof globalThis !== "undefined" ? globalThis : this, function buildProgressGoals(shared, progressChartLogic, controls, root) {
+  const customControls = root.WorthlyCustomAllocationControls || (typeof require !== "undefined" ? require("./custom_allocation_controls.js") : null);
   const {
     escapeHTML,
     formatDateLabel,
@@ -71,7 +72,10 @@
     const view = resolveProgressView({ view: state.progressView });
     const chartMode = state.progressChartMode || "net_worth";
     const projectionMonths = state.progressProjectionMonths || 6;
-    const allocationMode = state.progressAllocationMode || "asset_type";
+    const customCharts = page.AllocationSnapshots?.[0]?.CustomAllocations || [];
+    const allocationMode = customControls.normalizeMode(state.progressAllocationMode, customCharts);
+    state.progressAllocationMode = allocationMode;
+    if (state.progressAllocationModal) state.progressAllocationModal.mode = allocationMode;
     const allocationDate = normalizeProgressDateSelection(
       page.AllocationSnapshots,
       state.progressAllocationDate || page.Filter?.EndDate,
@@ -250,6 +254,7 @@
                   data-progress-allocation-mode="${mode.id}"
                 >${escapeHTML(mode.label)}</button>
               `).join("")}
+              ${customControls.render(page.AllocationSnapshots?.find((item) => item.SnapshotDate === modal.snapshotDate)?.CustomAllocations, modal.mode || "asset_type", "progress")}
             </div>
             <div class="progress-allocation-actions">
               <button id="progress-allocation-home" class="button" type="button">See Details</button>
@@ -311,7 +316,7 @@
   }
 
   function resolveAllocationTotalValue(point, rows, mode) {
-    if (mode === "category") {
+    if (mode === "category" || mode?.startsWith("custom:")) {
       return rows.reduce((sum, row) => sum + Number(row.value || 0), 0);
     }
     return Number(point.TotalCurrent || 0);
@@ -485,6 +490,11 @@
       });
     }
 
+    customControls.bind("progress", (mode) => {
+      state.progressAllocationMode = mode;
+      if (state.progressAllocationModal) state.progressAllocationModal.mode = mode;
+      renderProgressPage(app);
+    });
     for (const button of root.document.querySelectorAll("[data-progress-allocation-mode]")) {
       button.addEventListener("click", () => {
         state.progressAllocationMode = button.dataset.progressAllocationMode;
@@ -492,6 +502,7 @@
           state.progressAllocationModal.mode = state.progressAllocationMode;
         }
         renderProgressPage(app);
+        if (state.progressAllocationMode.startsWith("custom:")) customControls.focus("progress");
       });
     }
 

@@ -58,10 +58,11 @@ type ProgressSummary struct {
 }
 
 type AllocationSnapshot struct {
-	SnapshotDate string
-	ByAssetType  []AllocationSlice
-	ByAsset      []AllocationSlice
-	ByCategory   []AllocationSlice
+	CustomAllocations []CustomAllocationBreakdown
+	SnapshotDate      string
+	ByAssetType       []AllocationSlice
+	ByAsset           []AllocationSlice
+	ByCategory        []AllocationSlice
 }
 
 type AllocationSlice struct {

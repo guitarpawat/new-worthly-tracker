@@ -3,9 +3,10 @@ package dto
 import "github.com/shopspring/decimal"
 
 type AssetManagementPage struct {
-	AssetTypes       []AssetTypeRow
-	Assets           []AssetRow
-	ActiveAssetTypes []AssetTypeOption
+	CustomAllocationCharts []CustomAllocationChart
+	AssetTypes             []AssetTypeRow
+	Assets                 []AssetRow
+	ActiveAssetTypes       []AssetTypeOption
 }
 
 type AssetTypeRow struct {
@@ -17,6 +18,7 @@ type AssetTypeRow struct {
 }
 
 type AssetRow struct {
+	CanDelete     bool
 	ID            int64
 	Name          string
 	AssetTypeID   int64
@@ -60,14 +62,15 @@ type CreateAssetInput struct {
 }
 
 type UpdateAssetInput struct {
-	ID            int64
-	Name          string
-	AssetTypeID   int64
-	Broker        string
-	IsCash        bool
-	IsLiability   bool
-	IsActive      bool
-	AutoIncrement decimal.Decimal `ts_type:"string"`
+	ChartAllocations []AssetChartAllocation
+	ID               int64
+	Name             string
+	AssetTypeID      int64
+	Broker           string
+	IsCash           bool
+	IsLiability      bool
+	IsActive         bool
+	AutoIncrement    decimal.Decimal `ts_type:"string"`
 }
 
 type AssetMutationResult struct {

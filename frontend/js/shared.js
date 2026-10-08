@@ -18,7 +18,7 @@
     hasUnsavedChanges: false,
     deleteDialog: null,
     assetManagementPage: null,
-    assetManagementView: "create_asset",
+    assetManagementView: "edit_asset",
     assetTypeForm: null,
     assetForm: null,
     assetTypeError: "",

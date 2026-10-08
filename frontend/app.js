@@ -97,12 +97,8 @@ async function loadAssetManagementPage(options = {}) {
     state.assetManagementView = view;
     state.assetTypeError = "";
     state.assetError = "";
-    state.assetTypeForm = view === "create_asset_type"
-      ? assetManagement.buildEmptyAssetTypeForm()
-      : assetManagement.buildAssetTypeFormState(page, selectedAssetTypeID);
-    state.assetForm = view === "create_asset"
-      ? assetManagement.buildEmptyAssetForm(page)
-      : assetManagement.buildAssetFormState(page, selectedAssetID);
+    state.assetTypeForm = assetManagement.buildAssetTypeFormState(page, selectedAssetTypeID);
+    state.assetForm = assetManagement.buildAssetFormState(page, selectedAssetID);
     assetManagement.renderAssetManagementPage(appContext());
     if (scrollPosition) {
       globalThis.scrollTo({ ...scrollPosition, behavior: "instant" });

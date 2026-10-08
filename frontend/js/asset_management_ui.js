@@ -7,6 +7,7 @@
   }
   root.WorthlyAssetManagementUI = assetManagementUI;
 }(typeof globalThis !== "undefined" ? globalThis : this, function buildAssetManagementUI(shared, controls, root) {
+  const assetCharts = root.WorthlyAssetChartAllocations || (typeof require !== "undefined" ? require("./asset_chart_allocations.js") : null);
   const {
     escapeHTML,
     formatEditableNumber,
@@ -46,7 +47,7 @@
           </label>
           ${errorMessage ? `<p class="error-copy error-banner">${escapeHTML(errorMessage)}</p>` : ""}
           <div class="asset-management-form-footer">
-            <div class="asset-management-form-footer-left">
+          <div class="asset-management-form-footer-left">
               ${showActiveToggle
                 ? `
                   <label class="field-inline field-inline-toggle">
@@ -57,6 +58,7 @@
                 : ""}
             </div>
             <div class="actions asset-management-card-actions">
+              ${options.deleteAction || ""}
               <button id="asset-type-save-button" class="button button-primary" type="button">${assetTypeForm.id > 0 ? "Save Type" : "Create Type"}</button>
               <button id="asset-type-reset-button" class="button" type="button">${secondaryButtonLabel}</button>
             </div>
@@ -102,6 +104,7 @@
             <span class="field-label">Auto Increment</span>
             <input id="asset-auto-increment-input" class="form-input numeric" type="text" inputmode="decimal" value="${escapeHTML(assetForm.autoIncrement)}" ${assetForm.isCash ? "disabled" : ""} />
           </label>
+          ${assetCharts.render(page, assetForm)}
           ${errorMessage ? `<p class="error-copy error-banner asset-management-error">${escapeHTML(errorMessage)}</p>` : ""}
           <div class="asset-management-form-footer asset-management-form-footer-wide">
             <div class="asset-management-toggle-row">
@@ -123,6 +126,7 @@
                 : ""}
             </div>
             <div class="actions asset-management-card-actions">
+              ${options.deleteAction || ""}
               <button id="asset-save-button" class="button button-primary" type="button">${assetForm.id > 0 ? "Save Asset" : "Create Asset"}</button>
               <button id="asset-reset-button" class="button" type="button">${secondaryButtonLabel}</button>
             </div>
@@ -210,7 +214,7 @@
 
   function renderAssetTypeTableRow(assetType, assetTypeForm) {
     return `
-      <tr class="${assetTypeForm.id === assetType.ID ? "management-row-active" : ""}" data-asset-type-row-id="${assetType.ID}">
+      <tr class="${assetTypeForm.id === assetType.ID ? "management-row-active" : ""}" tabindex="0" role="button" aria-label="Edit ${escapeHTML(assetType.Name)}" data-asset-type-row-id="${assetType.ID}">
         <td>${escapeHTML(assetType.Name)}</td>
         <td class="numeric">${assetType.AssetCount}</td>
         <td>${renderStatusPill(assetType.IsActive)}</td>
@@ -220,7 +224,7 @@
 
   function renderAssetTableRow(asset, assetForm) {
     return `
-      <tr class="${assetForm.id === asset.ID ? "management-row-active" : ""}" data-asset-row-id="${asset.ID}">
+      <tr class="${assetForm.id === asset.ID ? "management-row-active" : ""}" tabindex="0" role="button" aria-label="Edit ${escapeHTML(asset.Name)}" data-asset-row-id="${asset.ID}">
         <td>${escapeHTML(asset.Name)}</td>
         <td>${escapeHTML(asset.AssetTypeName)}</td>
         <td>${escapeHTML(asset.Broker)}</td>
@@ -271,6 +275,7 @@
       isLiability: row.IsLiability,
       isActive: row.IsActive,
       autoIncrement: formatEditableNumber(row.AutoIncrement),
+      ...(page.CustomAllocationCharts ? { chartAllocations: assetCharts.buildDrafts(page, row.ID) } : {}),
     };
   }
 
@@ -296,6 +301,7 @@
 
   function buildAssetUpdatePayload(form) {
     return {
+      ...(form.chartAllocations ? { ChartAllocations: assetCharts.buildPayload(form) } : {}),
       ID: form.id,
       Name: form.name,
       AssetTypeID: form.assetTypeID,

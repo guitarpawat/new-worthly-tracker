@@ -25,6 +25,7 @@ func NewDemoDataRepository(
 
 func (r *DemoDataRepository) HasAnyUserData(ctx context.Context) (bool, error) {
 	queries := []string{
+		`SELECT COUNT(1) FROM custom_allocation_charts`,
 		`SELECT COUNT(1) FROM asset_types`,
 		`SELECT COUNT(1) FROM assets`,
 		`SELECT COUNT(1) FROM record_snapshots`,

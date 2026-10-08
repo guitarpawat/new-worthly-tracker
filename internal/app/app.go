@@ -14,6 +14,7 @@ import (
 )
 
 type App struct {
+	customAllocations      *service.CustomAllocationService
 	ctx                    context.Context
 	logger                 *slog.Logger
 	recordService          *service.RecordService
@@ -34,8 +35,10 @@ func New(
 	progressService *service.ProgressService,
 	goalService *service.GoalService,
 	demoData *service.DemoDataService,
+	customAllocations *service.CustomAllocationService,
 ) *App {
 	return &App{
+		customAllocations:      customAllocations,
 		logger:                 logger,
 		recordService:          recordService,
 		assetManagementService: assetManagementService,
@@ -66,6 +69,12 @@ func (a *App) GetHomePage(offset int) (dto.HomePage, error) {
 	}
 
 	if page.HasSnapshot {
+		date := page.SnapshotDate.Format("2006-01-02")
+		breakdowns, err := a.customAllocations.Breakdowns(a.ctx, date, date)
+		if err != nil {
+			return dto.HomePage{}, fmt.Errorf("load custom allocations: %w", err)
+		}
+		page.CustomAllocations = breakdowns[date]
 		a.logger.Info(
 			"loaded home page",
 			"offset", offset,
@@ -129,6 +138,10 @@ func (a *App) GetAssetManagementPage() (dto.AssetManagementPage, error) {
 		a.logger.Error("load asset management page", "err", err)
 		return dto.AssetManagementPage{}, fmt.Errorf("load asset management page: %w", err)
 	}
+	page.CustomAllocationCharts, err = a.customAllocations.ListCharts(a.ctx)
+	if err != nil {
+		return dto.AssetManagementPage{}, fmt.Errorf("load custom allocation charts: %w", err)
+	}
 
 	a.logger.Info(
 		"loaded asset management page",
@@ -149,6 +162,15 @@ func (a *App) GetProgressPage(filter dto.ProgressFilter) (dto.ProgressPage, erro
 	if err != nil {
 		a.logger.Error("load progress page", "start_date", filter.StartDate, "end_date", filter.EndDate, "err", err)
 		return dto.ProgressPage{}, fmt.Errorf("load progress page: %w", err)
+	}
+	if page.HasData {
+		breakdowns, err := a.customAllocations.Breakdowns(a.ctx, page.Filter.StartDate, page.Filter.EndDate)
+		if err != nil {
+			return dto.ProgressPage{}, fmt.Errorf("load custom allocations: %w", err)
+		}
+		for i := range page.AllocationSnapshots {
+			page.AllocationSnapshots[i].CustomAllocations = breakdowns[page.AllocationSnapshots[i].SnapshotDate]
+		}
 	}
 
 	a.logger.Info(
@@ -287,6 +309,11 @@ func (a *App) UpdateAsset(input dto.UpdateAssetInput) (dto.AssetMutationResult, 
 	if err := a.assetValidator.ValidateUpdateAssetInput(input); err != nil {
 		return dto.AssetMutationResult{}, err
 	}
+	allocations, err := validator.NormalizeAssetChartAllocations(input.ID, input.ChartAllocations)
+	if err != nil {
+		return dto.AssetMutationResult{}, err
+	}
+	input.ChartAllocations = allocations
 
 	result, err := a.assetManagementService.UpdateAsset(a.ctx, input)
 	if err != nil {

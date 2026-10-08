@@ -32,6 +32,7 @@ type Snapshot struct {
 }
 
 type HomePage struct {
+	CustomAllocations  []CustomAllocationBreakdown
 	SnapshotID         int64
 	HasSnapshot        bool
 	SnapshotDate       time.Time

@@ -39,6 +39,9 @@ func (s stubAssetManagementRepository) ReorderAssetTypes(context.Context, dto.Re
 	return nil
 }
 
+func (s stubAssetManagementRepository) DeleteAsset(context.Context, int64) error     { return nil }
+func (s stubAssetManagementRepository) DeleteAssetType(context.Context, int64) error { return nil }
+
 func (s stubAssetManagementRepository) ReorderAssets(context.Context, dto.ReorderAssetInput) error {
 	return s.reorderAssetsErr
 }

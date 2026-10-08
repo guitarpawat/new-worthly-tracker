@@ -1,0 +1,43 @@
+.chart-management-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 18px; }
+.chart-management-dialog { max-width: 560px; }
+.chart-management-empty { padding: 0 24px 24px; }
+.chart-dialog-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.chart-dialog-actions > .actions { margin-left: auto; }
+.chart-delete-button { border-color: #e8c0c0; background: #fff4f4; color: #a62929; }
+.chart-delete-button:hover:not(:disabled) { border-color: #c89090; background: #ffe8e8; }
+.management-table [data-chart-row] { cursor: pointer; }
+.management-table [data-chart-row]:hover { background: #faf4e6; }
+.management-table [data-chart-row]:focus-visible { outline: 2px solid #c79f3d; outline-offset: -2px; }
+.asset-chart-select { margin-top: 16px; }
+.asset-chart-inclusion { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; cursor: pointer; }
+.asset-chart-tags { grid-column: 1 / -1; min-width: 0; border-top: 1px solid #e6e1d9; padding-top: 18px; }
+.asset-chart-tags h3 { margin: 0; font-size: 1rem; }
+.asset-chart-group { border: 1px solid #d7d1c7; border-radius: 14px; padding: 16px; margin: 16px 0 0; min-width: 0; }
+.asset-chart-group legend { padding: 0 6px; font-weight: 600; }
+.asset-chart-row { display: grid; grid-template-columns: minmax(0, 2fr) minmax(100px, 1fr) auto; align-items: end; gap: 12px; margin-bottom: 14px; }
+.asset-chart-footer { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.progress-allocation-controls { flex-wrap: wrap; }
+.custom-allocation-menu { right: auto; min-width: 280px; max-width: min(360px, 80vw); }
+.custom-allocation-trigger { border-radius: 999px; }
+.custom-allocation-menu .custom-select-option {
+  padding: 12px 14px;
+  border: 1px solid #dfd7cb;
+  border-radius: 16px;
+  background: #fcfbf8;
+  color: #26231d;
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.custom-allocation-menu .custom-select-option:hover:enabled {
+  background: #f4efe6;
+  border-color: #cdb68a;
+}
+.custom-allocation-menu .custom-select-option-active {
+  background: #faf0ce;
+  border-color: #c79f3d;
+}
+@media (max-width: 700px) {
+  .asset-chart-row { grid-template-columns: 1fr; }
+}
